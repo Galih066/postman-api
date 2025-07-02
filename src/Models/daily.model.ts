@@ -1,0 +1,18 @@
+import mongoose from "mongoose";
+const { Schema, model } = mongoose;
+
+const dailyExpanseSchema = new Schema(
+    {
+        name: String,
+        description: String,
+        nominal: Number,
+        type: String,
+        frequence: String,
+        date: String
+    },
+    { timestamps: true }
+);
+
+const DailyExpanse = model('DailyExpanse', dailyExpanseSchema);
+
+export default DailyExpanse;
