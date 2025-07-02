@@ -8,7 +8,7 @@ const dailyExpanseSchema = new Schema(
         nominal: Number,
         type: String,
         frequence: String,
-        date: String
+        date: Date
     },
     { timestamps: true }
 );

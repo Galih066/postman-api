@@ -5,5 +5,6 @@ import { addExpanses } from "../Validations/expanses.validation.js";
 const router = Router();
 
 router.post('/add', validation(addExpanses, 'body'), ExpansesController.addDaily);
+router.get('/get-daily', ExpansesController.getDaily);
 
 export default router;
