@@ -6,9 +6,13 @@ import expansesRoute from './Routes/expanses.route.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const cortOptions = {
+	origin: 'http://localhost:5173',
+	credentials: true
+};
 
 app.use(express.json());
-app.use(cors());
+app.use(cors(cortOptions));
 app.use('/api/auth', authRoute);
 app.use('/api/expanses', expansesRoute);
 
