@@ -13,3 +13,7 @@ export const addType = Joi.object({
     name: Joi.string().required(),
     description: Joi.string().required()
 });
+
+export const addFreq = Joi.object({
+    name: Joi.string().required(),
+});
