@@ -5,6 +5,7 @@ import * as FreqController from "../Controllers/Expanses/frequence.controller.js
 import validation from "../Middlewares/validation.middleware.js";
 import {
     addExpanses,
+    dailyExpanses,
     addType,
     addFreq
 } from "../Validations/expanses.validation.js";
@@ -12,7 +13,7 @@ import {
 const router = Router();
 
 router.post('/add', validation(addExpanses, 'body'), ExpansesController.addDaily);
-router.get('/get-daily', ExpansesController.getDaily);
+router.get('/get-daily', validation(dailyExpanses, 'query'), ExpansesController.getDaily);
 router.post('/add-type', validation(addType, 'body'), TypeController.addType);
 router.get('/get-type', TypeController.getType);
 router.get('/get-freq', FreqController.allFreq);

@@ -6,3 +6,8 @@ export interface DailyExpnsIntfc {
     frequence: string,
     date: string
 }
+
+export interface GetDailyExpIntfc {
+    start: string,
+    end: string
+}

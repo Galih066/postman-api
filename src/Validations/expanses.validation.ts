@@ -17,3 +17,8 @@ export const addType = Joi.object({
 export const addFreq = Joi.object({
     name: Joi.string().required(),
 });
+
+export const dailyExpanses = Joi.object({
+    start: Joi.string().required(),
+    end: Joi.string().required()
+});
