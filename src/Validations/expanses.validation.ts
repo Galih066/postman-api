@@ -22,3 +22,10 @@ export const dailyExpanses = Joi.object({
     start: Joi.string().required(),
     end: Joi.string().required()
 });
+
+export const addInc = Joi.object({
+    name: Joi.string().required(),
+    month: Joi.string().required(),
+    year: Joi.string().required(),
+    number: Joi.number().required(),
+});
