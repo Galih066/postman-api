@@ -49,6 +49,8 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
             expansesSummaryAggr(startDate, endDate, timeZone)
         );
 
+        if (!rawData.length) return ApiSuccess("Success", []);
+
         const sumNominal = rawData.reduce((acc, item) => acc + item.totalNominal, 0);
         const sumCount = rawData.reduce((acc, item) => acc + item.count, 0);
         const groupType = rawData.reduce((acc, item) => {
