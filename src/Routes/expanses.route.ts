@@ -9,7 +9,8 @@ import {
     dailyExpanses,
     addType,
     addFreq,
-    addInc
+    addInc,
+    getInc
 } from "../Validations/expanses.validation.js";
 
 const router = Router();
@@ -22,5 +23,6 @@ router.get('/get-freq', FreqController.allFreq);
 router.post('/add-freq', validation(addFreq, 'body'), FreqController.addFreq);
 router.get('/get-summary', validation(dailyExpanses, 'query'), ExpansesController.getSummary);
 router.post('/add-income', validation(addInc, 'body'), IncomeController.addUserIncome)
+router.get('/get-income', validation(getInc, 'query'), IncomeController.getUserIncome)
 
 export default router;

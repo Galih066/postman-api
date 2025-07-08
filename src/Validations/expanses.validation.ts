@@ -29,3 +29,8 @@ export const addInc = Joi.object({
     year: Joi.string().required(),
     number: Joi.number().required(),
 });
+
+export const getInc = Joi.object({
+    month: Joi.string().required(),
+    year: Joi.string().required(),
+});

@@ -20,3 +20,15 @@ export interface RawResultQuery {
     freq: string,
     typeName: string
 }
+
+export interface AddIncomeIntfc {
+    name: string,
+    month: string,
+    year: string,
+    number: number,
+}
+
+export interface GetIncomeIntfc {
+    month: string,
+    year: string,
+}
