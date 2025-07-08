@@ -26,12 +26,9 @@ export const getDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     try {
         const startDate = moment(start).startOf("days").format('YYYY-MM-DD HH:mm:ss')
         const endDate = moment(end).endOf("days").format('YYYY-MM-DD HH:mm:ss')
-        const dailyData = await DailyExpanse.find({
-            date: {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate)
-            }
-        });
+        const dailyData = await DailyExpanse
+            .find({ date: { $gte: new Date(startDate), $lte: new Date(endDate) } })
+            .sort({ type: 1 });
 
         return ApiSuccess("Success", dailyData);
     } catch (error) {
