@@ -18,5 +18,6 @@ router.post('/add-type', validation(addType, 'body'), TypeController.addType);
 router.get('/get-type', TypeController.getType);
 router.get('/get-freq', FreqController.allFreq);
 router.post('/add-freq', validation(addFreq, 'body'), FreqController.addFreq);
+router.get('/get-summary', validation(dailyExpanses, 'query'), ExpansesController.getSummary);
 
 export default router;

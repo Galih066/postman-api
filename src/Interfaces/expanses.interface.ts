@@ -11,3 +11,12 @@ export interface GetDailyExpIntfc {
     start: string,
     end: string
 }
+
+export interface RawResultQuery {
+    totalNominal: number,
+    count: number,
+    date: string,
+    type: string,
+    freq: string,
+    typeName: string
+}
