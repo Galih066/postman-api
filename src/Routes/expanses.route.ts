@@ -22,7 +22,8 @@ router.get('/get-type', TypeController.getType);
 router.get('/get-freq', FreqController.allFreq);
 router.post('/add-freq', validation(addFreq, 'body'), FreqController.addFreq);
 router.get('/get-summary', validation(dailyExpanses, 'query'), ExpansesController.getSummary);
-router.post('/add-income', validation(addInc, 'body'), IncomeController.addUserIncome)
-router.get('/get-income', validation(getInc, 'query'), IncomeController.getUserIncome)
+router.post('/add-income', validation(addInc, 'body'), IncomeController.addUserIncome);
+router.get('/get-income', validation(getInc, 'query'), IncomeController.getUserIncome);
+router.get('/daily-chart', validation(getInc, 'query'), ExpansesController.dailyChart);
 
 export default router;

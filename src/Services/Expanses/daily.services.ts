@@ -2,11 +2,16 @@ import moment from "moment-timezone";
 import {
     DailyExpnsIntfc,
     GetDailyExpIntfc,
-    RawResultQuery
+    RawResultQuery,
+    GetIncomeIntfc,
+    DailyChartIntfc
 } from "../../Interfaces/expanses.interface.js";
 import { InternalServerError, ApiSuccess } from "../../Helpers/response.helper.js";
 import DailyExpanse from "../../Models/daily.model.js";
-import { expansesSummaryAggr } from "../../Repositories/Expanses/summary.pipeline.js";
+import {
+    expansesSummaryAggr,
+    dailyChartAggr
+} from "../../Repositories/Expanses/summary.pipeline.js";
 
 export const handleDailyExpanses = async (params: DailyExpnsIntfc) => {
     try {
@@ -77,6 +82,23 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
         }
 
         return ApiSuccess("Success", result);
+    } catch (error) {
+        console.log(error);
+        return InternalServerError();
+    }
+}
+
+export const getDailyChart = async ({ month, year }: GetIncomeIntfc) => {
+    try {
+        const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const timeZone: string = moment.tz.guess();
+
+        const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(
+            dailyChartAggr(start, end, timeZone)
+        );
+
+        return ApiSuccess("Success", rawSummary);
     } catch (error) {
         console.log(error);
         return InternalServerError();

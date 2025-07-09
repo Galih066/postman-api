@@ -32,3 +32,8 @@ export interface GetIncomeIntfc {
     month: string,
     year: string,
 }
+
+export interface DailyChartIntfc {
+    date: string,
+    total: number,
+}

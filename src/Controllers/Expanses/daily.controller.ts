@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import * as ExpanseSvc from "../../Services/Expanses/daily.services.js"
-import { GetDailyExpIntfc } from "../../Interfaces/expanses.interface.js";
+import {
+    GetDailyExpIntfc,
+    GetIncomeIntfc
+} from "../../Interfaces/expanses.interface.js";
 
 export const addDaily = async (req: Request, res: Response) => {
     const reqData = req.body;
@@ -17,5 +20,11 @@ export const getDaily = async (req: Request, res: Response) => {
 export const getSummary = async (req: Request, res: Response) => {
     const { start, end } = req.query as unknown as GetDailyExpIntfc;
     const data = await ExpanseSvc.getSummaryExpanses({ start, end });
+    res.status(data.statusCode).json(data);
+}
+
+export const dailyChart = async (req: Request, res: Response) => {
+    const { month, year } = req.query as unknown as GetIncomeIntfc;
+    const data = await ExpanseSvc.getDailyChart({ month, year });
     res.status(data.statusCode).json(data);
 }
