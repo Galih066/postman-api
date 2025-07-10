@@ -93,12 +93,27 @@ export const getDailyChart = async ({ month, year }: GetIncomeIntfc) => {
         const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
         const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
         const timeZone: string = moment.tz.guess();
+        const arrDateRange = [];
+        const current = moment(start);
+
+        while (current.isSameOrBefore(end, 'day')) {
+            arrDateRange.push(current.format('YYYY-MM-DD'));
+            current.add(1, 'day');
+        }
 
         const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(
             dailyChartAggr(start, end, timeZone)
         );
 
-        return ApiSuccess("Success", rawSummary);
+        const result: { date: string, total: number }[] = [];
+        arrDateRange.forEach(item => {
+            const defaultVal = { date: item, total: 0 };
+            const foundData = rawSummary.find(value => item === value.date);
+            if (foundData) result.push(foundData);
+            if (!foundData) result.push(defaultVal);
+        });
+
+        return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
         return InternalServerError();
