@@ -55,6 +55,7 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
 
         const sumNominal = rawData.reduce((acc, item) => acc + item.totalNominal, 0);
         const sumCount = rawData.reduce((acc, item) => acc + item.count, 0);
+        const dayCount = moment(end).diff(moment(start), 'days') + 1;
         const groupType = rawData.reduce((acc, item) => {
             const key = item.type;
             if (!acc[key]) acc[key] = { type: item.typeName, total: 0 };
@@ -75,7 +76,8 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
         const rawType = Object.values(groupType).sort((a, b) => b.total - a.total);
         const result = {
             total: sumNominal,
-            avg: +(sumNominal / sumCount).toFixed(2),
+            avgTransaction: +(sumNominal / sumCount).toFixed(2),
+            avgPerDays: +(sumNominal / dayCount).toFixed(2),
             mostSpendType: rawType[0].type,
             dailyAvg: rawDaily,
             typeSpend: rawType,
