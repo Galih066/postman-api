@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as IncomeService from "../../Services/Expanses/income.service.js";
+import * as IncomeService from "../../Services/Expanses/income.services.js";
 import { GetIncomeIntfc } from "../../Interfaces/expanses.interface.js";
 
 export const addUserIncome = async (req: Request, res: Response) => {
