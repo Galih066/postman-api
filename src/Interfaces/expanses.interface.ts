@@ -22,10 +22,11 @@ export interface RawResultQuery {
 }
 
 export interface AddIncomeIntfc {
-    name: string,
-    month: string,
-    year: string,
-    number: number,
+    name: string;
+    month: string;
+    year: string;
+    actual: number;
+    budget: number;
 }
 
 export interface GetIncomeIntfc {

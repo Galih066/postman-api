@@ -6,7 +6,8 @@ const incomeSchema = new Schema(
         name: String,
         month: String,
         year: String,
-        number: { type: Number, required: true },
+        actual: { type: Number, required: true },
+        budget: { type: Number, required: true },
     },
     { timestamps: true }
 );
