@@ -24,10 +24,15 @@ export const addIncome = async (params: AddIncomeIntfc) => {
 export const getIncome = async (params: GetIncomeIntfc) => {
     try {
         const incomeData = await Income
-            .find({ month: params.month, year: params.year })
-            .select('number name budget');
-        const total = incomeData.reduce((acc, item) => (acc + item.actual), 0);
-        const result = { total, details: incomeData };
+            .find({ month: params.month.toLowerCase(), year: params.year })
+            .select('number name actual budget');
+        const totalIncome = incomeData.reduce((acc, item) => (acc + item.actual), 0);
+        const budgetTreshold = incomeData.reduce((acc, item) => (acc + item.budget), 0);
+        const result = {
+            totalIncome,
+            budgetTreshold,
+            details: incomeData
+        };
 
         return ApiSuccess("Success", result);
     } catch (error) {
