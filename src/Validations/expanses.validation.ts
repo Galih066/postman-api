@@ -27,7 +27,8 @@ export const addInc = Joi.object({
     name: Joi.string().required(),
     month: Joi.string().required(),
     year: Joi.string().required(),
-    number: Joi.number().required(),
+    actual: Joi.number().required(),
+    budget: Joi.number().required(),
 });
 
 export const getInc = Joi.object({
