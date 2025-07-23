@@ -9,6 +9,7 @@ import {
 import { InternalServerError, ApiSuccess } from "../../Helpers/response.helper.js";
 import { dateRangeGenerator } from "../../Helpers/date.helper.js";
 import DailyExpanse from "../../Models/daily.model.js";
+import Income from "../../Models/income.model.js";
 import {
     expansesSummaryAggr,
     dailyChartAggr
@@ -120,16 +121,35 @@ export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
     try {
         const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
         const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const lastMonthStart = moment().month(month).year(+year).subtract({ month: 1 }).startOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const lastMonthEnd = moment().month(month).year(+year).subtract({ month: 1 }).endOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const lastMonthName = moment(lastMonthStart).format('MMMM').toLowerCase();
+        const yearAdjustment = moment(lastMonthStart).format('YYYY');
         const arrDate = dateRangeGenerator(start, end);
         const timeZone: string = moment.tz.guess();
-        const [rawData] = await Promise.all([
-            DailyExpanse.aggregate(expansesSummaryAggr(start, end, timeZone))
+        const [expanses, lastMnthExp, income, lastMnthInc] = await Promise.all([
+            DailyExpanse.aggregate(expansesSummaryAggr(start, end, timeZone)),
+            DailyExpanse.aggregate(expansesSummaryAggr(lastMonthStart, lastMonthEnd, timeZone)),
+            Income.find({ month: month.toLowerCase(), year }).select('createdAt actual budget'),
+            Income.find({ month: lastMonthName, year: yearAdjustment }).select('createdAt actual budget')
         ]);
+        const totalExpanses = expanses.reduce((acc, item) => acc + item.totalNominal, 0);
+        const totalIncome = income.reduce((acc, item) => acc + item.actual, 0);
+        const totalBudget = income.reduce((acc, item) => acc + item.budget, 0);
+        const lstMonthTotalExpanses = lastMnthExp.reduce((acc, item) => acc + item.totalNominal, 0);
+        const lstMonthTotalIncome = lastMnthInc.reduce((acc, item) => acc + item.actual, 0);
+        const lstMonthTotalBudget = lastMnthInc.reduce((acc, item) => acc + item.budget, 0);
 
-        console.log(start)
-        console.log(end)
+        const result = {
+            expanses: totalExpanses,
+            income: totalIncome,
+            budget: totalBudget,
+            lastMonthExpanses: lstMonthTotalExpanses,
+            lastMonthIncome: lstMonthTotalIncome,
+            lastMonthBudget: lstMonthTotalBudget,
+        }
 
-        return ApiSuccess("Success", arrDate);
+        return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
         return InternalServerError();

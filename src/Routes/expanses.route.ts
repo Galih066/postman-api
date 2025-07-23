@@ -25,5 +25,6 @@ router.get('/get-summary', validation(dailyExpanses, 'query'), ExpansesControlle
 router.post('/add-income', validation(addInc, 'body'), IncomeController.addUserIncome);
 router.get('/get-income', validation(getInc, 'query'), IncomeController.getUserIncome);
 router.get('/daily-chart', validation(getInc, 'query'), ExpansesController.dailyChart);
+router.get('/summary-analythic', validation(getInc, 'query'), ExpansesController.summAnalythic);
 
 export default router;

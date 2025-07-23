@@ -28,3 +28,9 @@ export const dailyChart = async (req: Request, res: Response) => {
     const data = await ExpanseSvc.getDailyChart({ month, year });
     res.status(data.statusCode).json(data);
 }
+
+export const summAnalythic = async (req: Request, res: Response) => {
+    const { month, year } = req.query as unknown as GetIncomeIntfc;
+    const data = await ExpanseSvc.getSummaryAnalysis({ month, year });
+    res.status(data.statusCode).json(data);
+}
