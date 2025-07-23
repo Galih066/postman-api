@@ -8,6 +8,7 @@ import {
 } from "../../Interfaces/expanses.interface.js";
 import { InternalServerError, ApiSuccess } from "../../Helpers/response.helper.js";
 import { dateRangeGenerator } from "../../Helpers/date.helper.js";
+import { sumByType, sumByFrequence } from "../../Helpers/summary.helper.js";
 import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import {
@@ -147,6 +148,8 @@ export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
             lastMonthExpanses: lstMonthTotalExpanses,
             lastMonthIncome: lstMonthTotalIncome,
             lastMonthBudget: lstMonthTotalBudget,
+            byType: sumByType(expanses),
+            byFreq: sumByFrequence(expanses),
         }
 
         return ApiSuccess("Success", result);
