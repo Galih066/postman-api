@@ -18,7 +18,8 @@ export interface RawResultQuery {
     date: string,
     type: string,
     freq: string,
-    typeName: string
+    typeName: string,
+    freqName: string,
 }
 
 export interface AddIncomeIntfc {

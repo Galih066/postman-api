@@ -15,7 +15,18 @@ export const expansesSummaryAggr = (startDate: string, endDate: string, timeZone
         }
     },
     {
+        $lookup: {
+            from: "frequences",
+            localField: "frequence",
+            foreignField: "code",
+            as: "freqName"
+        }
+    },
+    {
         $unwind: "$typeName"
+    },
+    {
+        $unwind: "$freqName"
     },
     {
         $addFields: {
@@ -36,6 +47,7 @@ export const expansesSummaryAggr = (startDate: string, endDate: string, timeZone
                 frequence: "$frequence"
             },
             typeName: { $first: "$typeName.name" },
+            freqName: { $first: "$freqName.name" },
             totalNominal: { $sum: "$nominal" },
             count: { $sum: 1 }
         }
@@ -46,6 +58,7 @@ export const expansesSummaryAggr = (startDate: string, endDate: string, timeZone
             type: "$_id.type",
             freq: "$_id.frequence",
             typeName: 1,
+            freqName: 1,
             _id: 0,
             totalNominal: 1,
             count: 1,
