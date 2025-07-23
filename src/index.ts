@@ -7,8 +7,7 @@ import expansesRoute from './Routes/expanses.route.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 const cortOptions = {
-	origin: 'http://localhost:5173',
-	credentials: true
+	origin: '*'
 };
 
 app.use(express.json());
