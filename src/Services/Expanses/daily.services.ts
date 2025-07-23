@@ -7,6 +7,7 @@ import {
     DailyChartIntfc
 } from "../../Interfaces/expanses.interface.js";
 import { InternalServerError, ApiSuccess } from "../../Helpers/response.helper.js";
+import { dateRangeGenerator } from "../../Helpers/date.helper.js";
 import DailyExpanse from "../../Models/daily.model.js";
 import {
     expansesSummaryAggr,
@@ -95,14 +96,7 @@ export const getDailyChart = async ({ month, year }: GetIncomeIntfc) => {
         const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
         const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
         const timeZone: string = moment.tz.guess();
-        const arrDateRange = [];
-        const current = moment(start);
-
-        while (current.isSameOrBefore(end, 'day')) {
-            arrDateRange.push(current.format('YYYY-MM-DD'));
-            current.add(1, 'day');
-        }
-
+        const arrDateRange = dateRangeGenerator(start, end);
         const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(
             dailyChartAggr(start, end, timeZone)
         );
@@ -116,6 +110,26 @@ export const getDailyChart = async ({ month, year }: GetIncomeIntfc) => {
         });
 
         return ApiSuccess("Success", result);
+    } catch (error) {
+        console.log(error);
+        return InternalServerError();
+    }
+}
+
+export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
+    try {
+        const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const arrDate = dateRangeGenerator(start, end);
+        const timeZone: string = moment.tz.guess();
+        const [rawData] = await Promise.all([
+            DailyExpanse.aggregate(expansesSummaryAggr(start, end, timeZone))
+        ]);
+
+        console.log(start)
+        console.log(end)
+
+        return ApiSuccess("Success", arrDate);
     } catch (error) {
         console.log(error);
         return InternalServerError();
