@@ -32,6 +32,7 @@ export const addInc = Joi.object({
 });
 
 export const getInc = Joi.object({
+    timezone: Joi.string().optional().allow(''),
     month: Joi.string().required(),
     year: Joi.string().required(),
 });

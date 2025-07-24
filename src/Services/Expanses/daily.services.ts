@@ -93,14 +93,13 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     }
 }
 
-export const getDailyChart = async ({ month, year }: GetIncomeIntfc) => {
+export const getDailyChart = async ({ month, year, timezone }: GetIncomeIntfc) => {
     try {
         const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
         const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
-        const timeZone: string = moment.tz.guess();
         const arrDateRange = dateRangeGenerator(start, end);
         const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(
-            dailyChartAggr(start, end, timeZone)
+            dailyChartAggr(start, end, timezone)
         );
 
         const result: { date: string, total: number }[] = [];
@@ -126,7 +125,6 @@ export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
         const lastMonthEnd = moment().month(month).year(+year).subtract({ month: 1 }).endOf("month").format('YYYY-MM-DD HH:mm:ss');
         const lastMonthName = moment(lastMonthStart).format('MMMM').toLowerCase();
         const yearAdjustment = moment(lastMonthStart).format('YYYY');
-        const arrDate = dateRangeGenerator(start, end);
         const timeZone: string = moment.tz.guess();
         const [expanses, lastMnthExp, income, lastMnthInc] = await Promise.all([
             DailyExpanse.aggregate(expansesSummaryAggr(start, end, timeZone)),

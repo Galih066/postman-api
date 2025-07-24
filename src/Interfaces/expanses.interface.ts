@@ -31,8 +31,9 @@ export interface AddIncomeIntfc {
 }
 
 export interface GetIncomeIntfc {
-    month: string,
-    year: string,
+    timezone?: any;
+    month: string;
+    year: string;
 }
 
 export interface DailyChartIntfc {
