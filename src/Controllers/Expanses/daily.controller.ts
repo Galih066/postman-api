@@ -24,9 +24,8 @@ export const getSummary = async (req: Request, res: Response) => {
 }
 
 export const dailyChart = async (req: Request, res: Response) => {
-    const { month, year } = req.query as unknown as GetIncomeIntfc;
-    const timezone = req.headers.timezone;
-    const data = await ExpanseSvc.getDailyChart({ month, year, timezone });
+    const { month, year, tz } = req.query as unknown as GetIncomeIntfc;
+    const data = await ExpanseSvc.getDailyChart({ month, year, tz });
     res.status(data.statusCode).json(data);
 }
 

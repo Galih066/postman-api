@@ -31,7 +31,7 @@ export interface AddIncomeIntfc {
 }
 
 export interface GetIncomeIntfc {
-    timezone?: any;
+    tz?: any;
     month: string;
     year: string;
 }

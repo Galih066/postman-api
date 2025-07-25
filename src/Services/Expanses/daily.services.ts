@@ -93,13 +93,13 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     }
 }
 
-export const getDailyChart = async ({ month, year, timezone }: GetIncomeIntfc) => {
+export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
     try {
         const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
         const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
         const arrDateRange = dateRangeGenerator(start, end);
         const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(
-            dailyChartAggr(start, end, timezone)
+            dailyChartAggr(start, end, tz)
         );
 
         const result: { date: string, total: number }[] = [];
