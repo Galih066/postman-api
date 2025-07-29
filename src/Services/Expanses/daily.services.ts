@@ -138,6 +138,7 @@ export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
         const lstMonthTotalExpanses = lastMnthExp.reduce((acc, item) => acc + item.totalNominal, 0);
         const lstMonthTotalIncome = lastMnthInc.reduce((acc, item) => acc + item.actual, 0);
         const lstMonthTotalBudget = lastMnthInc.reduce((acc, item) => acc + item.budget, 0);
+        const upDown = totalExpanses - lstMonthTotalExpanses;
 
         const result = {
             expanses: totalExpanses,
@@ -146,6 +147,7 @@ export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
             lastMonthExpanses: lstMonthTotalExpanses,
             lastMonthIncome: lstMonthTotalIncome,
             lastMonthBudget: lstMonthTotalBudget,
+            direction: upDown < 0 ? 'up' : 'down',
             byType: sumByType(expanses),
             byFreq: sumByFrequence(expanses),
         }
