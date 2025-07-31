@@ -8,7 +8,11 @@ import {
 } from "../../Interfaces/expanses.interface.js";
 import { InternalServerError, ApiSuccess } from "../../Helpers/response.helper.js";
 import { dateRangeGenerator } from "../../Helpers/date.helper.js";
-import { sumByType, sumByFrequence } from "../../Helpers/summary.helper.js";
+import {
+    sumByType,
+    sumByFrequence,
+    getPercentageChange
+} from "../../Helpers/summary.helper.js";
 import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import {
@@ -138,7 +142,11 @@ export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
         const lstMonthTotalExpanses = lastMnthExp.reduce((acc, item) => acc + item.totalNominal, 0);
         const lstMonthTotalIncome = lastMnthInc.reduce((acc, item) => acc + item.actual, 0);
         const lstMonthTotalBudget = lastMnthInc.reduce((acc, item) => acc + item.budget, 0);
-        const upDown = totalExpanses - lstMonthTotalExpanses;
+        const summPercentage = getPercentageChange(totalExpanses, lstMonthTotalExpanses);
+        const summPercentInc = getPercentageChange(totalIncome, lstMonthTotalIncome);
+        const budgetPercentg = (totalExpanses / totalBudget) * 100;
+        const savingsByBudget = totalBudget - totalExpanses;
+        const savingsBySallary = totalIncome - totalExpanses;
 
         const result = {
             expanses: totalExpanses,
@@ -147,7 +155,13 @@ export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
             lastMonthExpanses: lstMonthTotalExpanses,
             lastMonthIncome: lstMonthTotalIncome,
             lastMonthBudget: lstMonthTotalBudget,
-            direction: upDown < 0 ? 'up' : 'down',
+            percentage: summPercentage.percentage,
+            direction: summPercentage.direction,
+            percIncome: summPercentInc.percentage,
+            directionIncome: summPercentInc.direction,
+            budgetPercentg: +(+budgetPercentg.toFixed(2)),
+            savingsByBudget,
+            savingsBySallary,
             byType: sumByType(expanses),
             byFreq: sumByFrequence(expanses),
         }

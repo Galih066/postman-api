@@ -23,3 +23,16 @@ export const sumByFrequence = (rawData: RawResultQuery[]) => {
 
     return Object.values(freqResult);
 }
+
+export const getPercentageChange = (current: number, previous: number) => {
+    if (previous === 0) {
+        if (current === 0) return { direction: 'no change', percentage: 0 };
+        return { direction: 'up', percentage: 100 };
+    }
+
+    const change = current - previous;
+    const percentage = Math.abs(change / previous * 100);
+    const direction = change > 0 ? 'up' : change < 0 ? 'down' : 'no change';
+
+    return { direction, percentage: percentage.toFixed(2) };
+}
