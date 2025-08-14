@@ -35,4 +35,4 @@ export const getInc = Joi.object({
     tz: Joi.string().optional().allow(''),
     month: Joi.string().required(),
     year: Joi.string().required(),
-});
+}).unknown(true);
