@@ -38,10 +38,12 @@ export const getDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     try {
         const startDate = moment(start).startOf("days").format('YYYY-MM-DD HH:mm:ss')
         const endDate = moment(end).endOf("days").format('YYYY-MM-DD HH:mm:ss')
+        console.log(startDate, endDate)
         const dailyData = await DailyExpanse
             .find({ date: { $gte: new Date(startDate), $lte: new Date(endDate) } })
             .sort({ type: 1 });
 
+        console.log('Get Daily expanses', startDate, endDate)
         return ApiSuccess("Success", dailyData);
     } catch (error) {
         console.log(error);
@@ -90,6 +92,7 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
             typeSpend: rawType,
         }
 
+        console.log('Get Summary expanses', startDate, endDate)
         return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
@@ -114,6 +117,7 @@ export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
             if (!foundData) result.push(defaultVal);
         });
 
+        console.log('Get Daily Chart', start, end)
         return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
@@ -121,7 +125,7 @@ export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
     }
 }
 
-export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
+export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc) => {
     try {
         const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
         const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
@@ -129,10 +133,9 @@ export const getSummaryAnalysis = async ({ month, year }: GetIncomeIntfc) => {
         const lastMonthEnd = moment().month(month).year(+year).subtract({ month: 1 }).endOf("month").format('YYYY-MM-DD HH:mm:ss');
         const lastMonthName = moment(lastMonthStart).format('MMMM').toLowerCase();
         const yearAdjustment = moment(lastMonthStart).format('YYYY');
-        const timeZone: string = moment.tz.guess();
         const [expanses, lastMnthExp, income, lastMnthInc] = await Promise.all([
-            DailyExpanse.aggregate(expansesSummaryAggr(start, end, timeZone)),
-            DailyExpanse.aggregate(expansesSummaryAggr(lastMonthStart, lastMonthEnd, timeZone)),
+            DailyExpanse.aggregate(expansesSummaryAggr(start, end, tz)),
+            DailyExpanse.aggregate(expansesSummaryAggr(lastMonthStart, lastMonthEnd, tz)),
             Income.find({ month: month.toLowerCase(), year }).select('createdAt actual budget'),
             Income.find({ month: lastMonthName, year: yearAdjustment }).select('createdAt actual budget')
         ]);
