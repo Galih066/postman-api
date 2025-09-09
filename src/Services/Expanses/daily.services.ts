@@ -169,6 +169,7 @@ export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc) =>
             byFreq: sumByFrequence(expanses),
         }
 
+        console.log('Get Summary Analythic', start, end, tz)
         return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
