@@ -36,3 +36,8 @@ export const getInc = Joi.object({
     month: Joi.string().required(),
     year: Joi.string().required(),
 }).unknown(true);
+
+export const expansesList = Joi.object({
+    page: Joi.string().required(),
+    limit: Joi.string().required()
+});

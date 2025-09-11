@@ -176,3 +176,29 @@ export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc) =>
         return InternalServerError();
     }
 }
+
+export const getExpansesList = async (page: string, limit: string) => {
+    try {
+        const pages = +page || 1
+        const limits = +limit || 10
+        const skips = (pages - 1) * limits
+        const [rawList, total] = await Promise.all([
+            DailyExpanse.find().sort({ createdAt: -1 }).skip(skips).limit(limits),
+            DailyExpanse.countDocuments()
+        ])
+        const result = {
+            data: rawList,
+            paginations: {
+                total,
+                pages,
+                limits,
+                totalPages: Math.ceil(total / limits)
+            }
+        }
+
+        return ApiSuccess("Success", result)
+    } catch (error) {
+        console.log(error);
+        return InternalServerError();
+    }
+}

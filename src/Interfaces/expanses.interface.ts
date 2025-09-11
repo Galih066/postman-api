@@ -40,3 +40,8 @@ export interface DailyChartIntfc {
     date: string,
     total: number,
 }
+
+export interface ExpansesListPaginationIntfc {
+    page: string,
+    limit: string,
+}

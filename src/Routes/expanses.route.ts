@@ -10,7 +10,8 @@ import {
     addType,
     addFreq,
     addInc,
-    getInc
+    getInc,
+    expansesList
 } from "../Validations/expanses.validation.js";
 
 const router = Router();
@@ -26,5 +27,6 @@ router.post('/add-income', validation(addInc, 'body'), IncomeController.addUserI
 router.get('/get-income', validation(getInc, 'query'), IncomeController.getUserIncome);
 router.get('/daily-chart', validation(getInc, 'query'), ExpansesController.dailyChart);
 router.get('/summary-analythic', validation(getInc, 'query'), ExpansesController.summAnalythic);
+router.get('/list', validation(expansesList, 'query'), ExpansesController.dailyList);
 
 export default router;
