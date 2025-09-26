@@ -28,5 +28,6 @@ router.get('/get-income', validation(getInc, 'query'), IncomeController.getUserI
 router.get('/daily-chart', validation(getInc, 'query'), ExpansesController.dailyChart);
 router.get('/summary-analythic', validation(getInc, 'query'), ExpansesController.summAnalythic);
 router.get('/list', validation(expansesList, 'query'), ExpansesController.dailyList);
+router.get('/monthly-summary', ExpansesController.dailyList);
 
 export default router;

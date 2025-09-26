@@ -202,3 +202,12 @@ export const getExpansesList = async (page: string, limit: string) => {
         return InternalServerError();
     }
 }
+
+export const getMonthlySummary = async () => {
+    try {
+        return ApiSuccess("Success", [])
+    } catch (error) {
+        console.log(error);
+        return InternalServerError();
+    }
+}
