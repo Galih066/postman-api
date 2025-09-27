@@ -17,14 +17,17 @@ import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import {
     expansesSummaryAggr,
-    dailyChartAggr
+    dailyChartAggr,
+    monthlySummaryAggr,
+    monthlyIncomeAggr
 } from "../../Repositories/Expanses/summary.pipeline.js";
+import { DEFDATEFORMAT, DEFMONTH } from "../../utils/constants.js";
 
 export const handleDailyExpanses = async (params: DailyExpnsIntfc) => {
     try {
         const savedData = new DailyExpanse({
             ...params,
-            date: moment(params.date).format('YYYY-MM-DD HH:mm:ss')
+            date: moment(params.date).format(DEFDATEFORMAT)
         });
         await savedData.save();
         return ApiSuccess("Success")
@@ -36,8 +39,8 @@ export const handleDailyExpanses = async (params: DailyExpnsIntfc) => {
 
 export const getDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     try {
-        const startDate = moment(start).startOf("days").format('YYYY-MM-DD HH:mm:ss')
-        const endDate = moment(end).endOf("days").format('YYYY-MM-DD HH:mm:ss')
+        const startDate = moment(start).startOf("days").format(DEFDATEFORMAT)
+        const endDate = moment(end).endOf("days").format(DEFDATEFORMAT)
         console.log(startDate, endDate)
         const dailyData = await DailyExpanse
             .find({ date: { $gte: new Date(startDate), $lte: new Date(endDate) } })
@@ -53,8 +56,8 @@ export const getDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
 
 export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     try {
-        const startDate: string = moment(start).startOf("days").format('YYYY-MM-DD HH:mm:ss')
-        const endDate: string = moment(end).endOf("days").format('YYYY-MM-DD HH:mm:ss')
+        const startDate: string = moment(start).startOf("days").format(DEFDATEFORMAT)
+        const endDate: string = moment(end).endOf("days").format(DEFDATEFORMAT)
         const timeZone: string = moment.tz.guess()
         const rawData: RawResultQuery[] = await DailyExpanse.aggregate(
             expansesSummaryAggr(startDate, endDate, timeZone)
@@ -102,8 +105,8 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
 
 export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
     try {
-        const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
-        const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const start = moment().month(month).year(+year).startOf("month").format(DEFDATEFORMAT);
+        const end = moment().month(month).year(+year).endOf("month").format(DEFDATEFORMAT);
         const arrDateRange = dateRangeGenerator(start, end);
         const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(
             dailyChartAggr(start, end, tz)
@@ -127,10 +130,10 @@ export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
 
 export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc) => {
     try {
-        const start = moment().month(month).year(+year).startOf("month").format('YYYY-MM-DD HH:mm:ss');
-        const end = moment().month(month).year(+year).endOf("month").format('YYYY-MM-DD HH:mm:ss');
-        const lastMonthStart = moment().month(month).year(+year).subtract({ month: 1 }).startOf("month").format('YYYY-MM-DD HH:mm:ss');
-        const lastMonthEnd = moment().month(month).year(+year).subtract({ month: 1 }).endOf("month").format('YYYY-MM-DD HH:mm:ss');
+        const start = moment().month(month).year(+year).startOf("month").format(DEFDATEFORMAT);
+        const end = moment().month(month).year(+year).endOf("month").format(DEFDATEFORMAT);
+        const lastMonthStart = moment().month(month).year(+year).subtract({ month: 1 }).startOf("month").format(DEFDATEFORMAT);
+        const lastMonthEnd = moment().month(month).year(+year).subtract({ month: 1 }).endOf("month").format(DEFDATEFORMAT);
         const lastMonthName = moment(lastMonthStart).format('MMMM').toLowerCase();
         const yearAdjustment = moment(lastMonthStart).format('YYYY');
         const [expanses, lastMnthExp, income, lastMnthInc] = await Promise.all([
@@ -205,7 +208,17 @@ export const getExpansesList = async (page: string, limit: string) => {
 
 export const getMonthlySummary = async () => {
     try {
-        return ApiSuccess("Success", [])
+        const incomeYear = await Income.aggregate(monthlyIncomeAggr());
+        const expanses = await DailyExpanse.aggregate(monthlySummaryAggr());
+        const mappingExpanses = expanses.map(item => ({ ...item, monthName: DEFMONTH[item.month].toLowerCase() }));
+        const result: any = [];
+        const mapIncome = new Map(incomeYear.map(item => [`${item.year}-${item.month}`, item.budget]));
+        mappingExpanses.forEach(item => {
+            const key = `${item.year}-${item.monthName}`;
+            result.push({ ...item, budget: mapIncome.get(key) });
+        });
+
+        return ApiSuccess("Success", { result, incomeYear });
     } catch (error) {
         console.log(error);
         return InternalServerError();

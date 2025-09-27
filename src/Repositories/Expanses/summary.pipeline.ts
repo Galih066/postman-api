@@ -106,3 +106,59 @@ export const dailyChartAggr = (startDate: string, endDate: string, timeZone: str
         $sort: { date: 1 }
     }
 ]
+
+export const monthlySummaryAggr = (): PipelineStage[] => [
+    {
+        $addFields: {
+            year: { $year: "$date" },
+            month: { $month: "$date" }
+        }
+    },
+    {
+        $project: {
+            nominal: 1,
+            year: 1,
+            month: 1
+        }
+    },
+    {
+        $group: {
+            _id: { year: "$year", month: "$month" },
+            total: { $sum: "$nominal" },
+            count: { $sum: 1 }
+        }
+    },
+    {
+        $project: {
+            year: "$_id.year",
+            month: "$_id.month",
+            total: 1,
+            count: 1,
+            _id: 0
+        }
+    }
+]
+
+export const monthlyIncomeAggr = (): PipelineStage[] => [
+    {
+        $group: {
+            _id: {
+                month: "$month",
+                year: "$year"
+            },
+            income: { $sum: "$actual" },
+            budget: { $sum: "$budget" },
+            count: { $sum: 1 }
+        }
+    },
+    {
+        $project: {
+            month: "$_id.month",
+            year: "$_id.year",
+            income: 1,
+            count: 1,
+            budget: 1,
+            _id: 0
+        }
+    }
+]
