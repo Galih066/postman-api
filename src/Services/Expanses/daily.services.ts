@@ -13,6 +13,7 @@ import {
     sumByFrequence,
     getPercentageChange
 } from "../../Helpers/summary.helper.js";
+import { capitalize } from "../../Helpers/string.helper.js";
 import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import {
@@ -215,10 +216,14 @@ export const getMonthlySummary = async () => {
         const mapIncome = new Map(incomeYear.map(item => [`${item.year}-${item.month}`, item.budget]));
         mappingExpanses.forEach(item => {
             const key = `${item.year}-${item.monthName}`;
-            result.push({ ...item, budget: mapIncome.get(key) });
+            result.push({
+                ...item,
+                monthName: capitalize(item.monthName),
+                budget: mapIncome.get(key)
+            });
         });
 
-        return ApiSuccess("Success", { result, incomeYear });
+        return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
         return InternalServerError();
