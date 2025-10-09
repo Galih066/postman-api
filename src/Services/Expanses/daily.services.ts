@@ -207,10 +207,11 @@ export const getExpansesList = async (page: string, limit: string) => {
     }
 }
 
-export const getMonthlySummary = async () => {
+export const getMonthlySummary = async (params: any) => {
     try {
+        const timeZone = params.tz;
         const incomeYear = await Income.aggregate(monthlyIncomeAggr());
-        const expanses = await DailyExpanse.aggregate(monthlySummaryAggr());
+        const expanses = await DailyExpanse.aggregate(monthlySummaryAggr(timeZone));
         const mappingExpanses = expanses.map(item => ({ ...item, monthName: DEFMONTH[item.month].toLowerCase() }));
         const result: any = [];
         const mapIncome = new Map(incomeYear.map(item => [`${item.year}-${item.month}`, item.budget]));

@@ -43,6 +43,6 @@ export const dailyList = async (req: Request, res: Response) => {
 }
 
 export const monthlySummary = async (req: Request, res: Response) => {
-    const data = await ExpanseSvc.getMonthlySummary();
+    const data = await ExpanseSvc.getMonthlySummary(req.query);
     res.status(data.statusCode).json(data);
 }

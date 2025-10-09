@@ -107,11 +107,11 @@ export const dailyChartAggr = (startDate: string, endDate: string, timeZone: str
     }
 ]
 
-export const monthlySummaryAggr = (): PipelineStage[] => [
+export const monthlySummaryAggr = (timeZone: string): PipelineStage[] => [
     {
         $addFields: {
-            year: { $year: "$date" },
-            month: { $month: "$date" }
+            year: { $year: { date: "$date", timezone: timeZone } },
+            month: { $month: { date: "$date", timezone: timeZone } }
         }
     },
     {
