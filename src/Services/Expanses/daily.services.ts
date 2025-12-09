@@ -42,13 +42,55 @@ export const getDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     try {
         const startDate = moment(start).startOf("days").format(DEFDATEFORMAT)
         const endDate = moment(end).endOf("days").format(DEFDATEFORMAT)
-        console.log(startDate, endDate)
         const dailyData = await DailyExpanse
-            .find({ date: { $gte: new Date(startDate), $lte: new Date(endDate) } })
+            .find({
+                date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+                frequence: { $in: ["FREQ-000", "FREQ-001"] }
+            })
             .sort({ type: 1 });
 
-        console.log('Get Daily expanses', startDate, endDate)
         return ApiSuccess("Success", dailyData);
+    } catch (error) {
+        console.log(error);
+        return InternalServerError();
+    }
+}
+
+export const getNonDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
+    try {
+        const startDate = moment(start).startOf("days").format(DEFDATEFORMAT)
+        const endDate = moment(end).endOf("days").format(DEFDATEFORMAT)
+        const dailyData = await DailyExpanse.aggregate([
+            {
+                $match: {
+                    date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+                    // frequence: { $in: ["FREQ-000", "FREQ-003"] }
+                }
+            },
+            {
+                $lookup: {
+                    from: "types",
+                    localField: "type",
+                    foreignField: "code",
+                    as: "typeName"
+                }
+            },
+            { $unwind: "$typeName" },
+            {
+                $project: {
+                    name: 1,
+                    description: 1,
+                    nominal: 1,
+                    date: 1,
+                    type: "$typeName.name"
+                }
+            }
+        ])
+
+        const total = dailyData.reduce((acc, item: any) => acc += item.nominal, 0)
+        const result = { total, raw: dailyData }
+
+        return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
         return InternalServerError();
@@ -121,7 +163,6 @@ export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
             if (!foundData) result.push(defaultVal);
         });
 
-        console.log('Get Daily Chart', start, end)
         return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);

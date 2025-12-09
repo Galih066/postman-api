@@ -29,5 +29,6 @@ router.get('/daily-chart', validation(getInc, 'query'), ExpansesController.daily
 router.get('/summary-analythic', validation(getInc, 'query'), ExpansesController.summAnalythic);
 router.get('/list', validation(expansesList, 'query'), ExpansesController.dailyList);
 router.get('/monthly-summary', ExpansesController.monthlySummary);
+router.get('/get-non-daily', validation(dailyExpanses, 'query'), ExpansesController.getNonDaily);
 
 export default router;
