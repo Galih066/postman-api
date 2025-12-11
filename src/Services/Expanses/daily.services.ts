@@ -43,10 +43,7 @@ export const getDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
         const startDate = moment(start).startOf("days").format(DEFDATEFORMAT)
         const endDate = moment(end).endOf("days").format(DEFDATEFORMAT)
         const dailyData = await DailyExpanse
-            .find({
-                date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-                frequence: { $in: ["FREQ-000", "FREQ-001"] }
-            })
+            .find({ date: { $gte: new Date(startDate), $lte: new Date(endDate) } })
             .sort({ type: 1 });
 
         return ApiSuccess("Success", dailyData);
@@ -64,7 +61,7 @@ export const getNonDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
             {
                 $match: {
                     date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-                    // frequence: { $in: ["FREQ-000", "FREQ-003"] }
+                    frequence: { $in: ["FREQ-002", "FREQ-003"] }
                 }
             },
             {
