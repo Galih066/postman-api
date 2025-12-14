@@ -174,8 +174,9 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc) =
 
 export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
     try {
-        const start = moment().month(month).year(+year).startOf("month").format(DEFDATEFORMAT);
-        const end = moment().month(month).year(+year).endOf("month").format(DEFDATEFORMAT);
+        const timeZone = tz || moment.tz.guess()
+        const start = moment.tz(timeZone).month(month).year(+year).startOf("month").utc().toISOString();
+        const end = moment.tz(timeZone).month(month).year(+year).endOf("month").utc().toISOString();
         const arrDateRange = dateRangeGenerator(start, end);
         const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(
             dailyChartAggr(start, end, tz)
@@ -198,10 +199,11 @@ export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
 
 export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc) => {
     try {
-        const start = moment().month(month).year(+year).startOf("month").format(DEFDATEFORMAT);
-        const end = moment().month(month).year(+year).endOf("month").format(DEFDATEFORMAT);
-        const lastMonthStart = moment().month(month).year(+year).subtract({ month: 1 }).startOf("month").format(DEFDATEFORMAT);
-        const lastMonthEnd = moment().month(month).year(+year).subtract({ month: 1 }).endOf("month").format(DEFDATEFORMAT);
+        const timeZone = tz || moment.tz.guess()
+        const start = moment.tz(timeZone).month(month).year(+year).startOf("month").utc().toISOString();
+        const end = moment.tz(timeZone).month(month).year(+year).endOf("month").utc().toISOString();
+        const lastMonthStart = moment.tz(timeZone).month(month).year(+year).subtract({ month: 1 }).startOf("month").utc().toISOString();
+        const lastMonthEnd = moment.tz(timeZone).month(month).year(+year).subtract({ month: 1 }).endOf("month").utc().toISOString();
         const lastMonthName = moment(lastMonthStart).format('MMMM').toLowerCase();
         const yearAdjustment = moment(lastMonthStart).format('YYYY');
         const [expanses, lastMnthExp, income, lastMnthInc] = await Promise.all([
