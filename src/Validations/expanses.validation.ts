@@ -20,7 +20,8 @@ export const addFreq = Joi.object({
 
 export const dailyExpanses = Joi.object({
     start: Joi.string().required(),
-    end: Joi.string().required()
+    end: Joi.string().required(),
+    tz: Joi.string().optional().allow(''),
 });
 
 export const addInc = Joi.object({
