@@ -25,8 +25,8 @@ export const getNonDaily = async (req: Request, res: Response) => {
 }
 
 export const getSummary = async (req: Request, res: Response) => {
-    const { start, end } = req.query as unknown as GetDailyExpIntfc;
-    const data = await ExpanseSvc.getSummaryExpanses({ start, end });
+    const { start, end, tz } = req.query as unknown as GetDailyExpIntfc;
+    const data = await ExpanseSvc.getSummaryExpanses({ start, end, tz });
     res.status(data.statusCode).json(data);
 }
 

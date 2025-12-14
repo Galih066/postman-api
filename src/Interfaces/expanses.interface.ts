@@ -9,7 +9,8 @@ export interface DailyExpnsIntfc {
 
 export interface GetDailyExpIntfc {
     start: string,
-    end: string
+    end: string,
+    tz?: string
 }
 
 export interface RawResultQuery {

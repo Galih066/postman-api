@@ -98,11 +98,11 @@ export const getNonDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     }
 }
 
-export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
+export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc) => {
     try {
-        const startDate: string = moment(start).startOf("days").utc().toISOString()
-        const endDate: string = moment(end).endOf("days").utc().toISOString()
-        const timeZone: string = moment.tz.guess()
+        const timeZone: string = tz || moment.tz.guess()
+        const startDate: string = moment.tz(start, timeZone).startOf("days").utc().toISOString()
+        const endDate: string = moment.tz(end, timeZone).endOf("days").utc().toISOString()
         const monthList = getMonthBetweenDateRange(startDate, endDate)
         const monthArr = monthList.map(item => item.month)
         const yearArr = monthList.map(item => item.year)
