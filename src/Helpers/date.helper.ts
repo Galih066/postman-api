@@ -1,5 +1,4 @@
 import moment from "moment";
-import { DEFDATEFORMAT } from "../utils/constants.js";
 
 export const dateRangeGenerator = (start: string, end: string) => {
     const arrDateRange = [];
@@ -32,8 +31,8 @@ export const getMonthBetweenDateRange = (startDate: string, endDate: string) => 
 
 export const getDateRangeByArray = (months: { month: string, year: string }[]) => {
     if (!months.length) return {
-        start: moment().toString(),
-        end: moment().toString()
+        start: moment.utc().toISOString(),
+        end: moment.utc().toISOString()
     };
 
     let min = moment();
@@ -52,8 +51,8 @@ export const getDateRangeByArray = (months: { month: string, year: string }[]) =
     }
 
     const result: { start: string, end: string } = {
-        start: min.clone().utc().startOf('month').format(DEFDATEFORMAT),
-        end: max.clone().utc().endOf('month').format(DEFDATEFORMAT)
+        start: min.clone().utc().startOf('month').toISOString(),
+        end: max.clone().utc().endOf('month').toISOString()
     }
 
     return result
