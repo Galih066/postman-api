@@ -13,14 +13,14 @@ export const addDaily = async (req: Request, res: Response) => {
 }
 
 export const getDaily = async (req: Request, res: Response) => {
-    const { start, end } = req.query as unknown as GetDailyExpIntfc;
-    const data = await ExpanseSvc.getDailyExpanses({ start, end });
+    const { start, end, tz } = req.query as unknown as GetDailyExpIntfc;
+    const data = await ExpanseSvc.getDailyExpanses({ start, end, tz });
     res.status(data.statusCode).json(data);
 }
 
 export const getNonDaily = async (req: Request, res: Response) => {
-    const { start, end } = req.query as unknown as GetDailyExpIntfc;
-    const data = await ExpanseSvc.getNonDailyExpanses({ start, end });
+    const { start, end, tz } = req.query as unknown as GetDailyExpIntfc;
+    const data = await ExpanseSvc.getNonDailyExpanses({ start, end, tz });
     res.status(data.statusCode).json(data);
 }
 

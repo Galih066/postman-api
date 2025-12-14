@@ -42,10 +42,11 @@ export const handleDailyExpanses = async (params: DailyExpnsIntfc) => {
     }
 }
 
-export const getDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
+export const getDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc) => {
     try {
-        const startDate = moment(start).startOf("days").format(DEFDATEFORMAT)
-        const endDate = moment(end).endOf("days").format(DEFDATEFORMAT)
+        const timeZone = tz || moment.tz.guess()
+        const startDate = moment.tz(start, timeZone).startOf("days").utc().toISOString()
+        const endDate = moment.tz(end, timeZone).endOf("days").utc().toISOString()
         const dailyData = await DailyExpanse
             .find({ date: { $gte: new Date(startDate), $lte: new Date(endDate) } })
             .sort({ type: 1 });
@@ -57,10 +58,11 @@ export const getDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
     }
 }
 
-export const getNonDailyExpanses = async ({ start, end }: GetDailyExpIntfc) => {
+export const getNonDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc) => {
     try {
-        const startDate = moment(start).startOf("days").format(DEFDATEFORMAT)
-        const endDate = moment(end).endOf("days").format(DEFDATEFORMAT)
+        const timeZone = tz || moment.tz.guess()
+        const startDate = moment.tz(start, timeZone).startOf("days").utc().toISOString()
+        const endDate = moment.tz(end, timeZone).endOf("days").utc().toISOString()
         const dailyData = await DailyExpanse.aggregate([
             {
                 $match: {
