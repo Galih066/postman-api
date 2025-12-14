@@ -7,7 +7,11 @@ import {
     DailyChartIntfc
 } from "../../Interfaces/expanses.interface.js";
 import { InternalServerError, ApiSuccess } from "../../Helpers/response.helper.js";
-import { dateRangeGenerator } from "../../Helpers/date.helper.js";
+import {
+    dateRangeGenerator,
+    getMonthBetweenDateRange,
+    getDateRangeByArray
+} from "../../Helpers/date.helper.js";
 import {
     sumByType,
     sumByFrequence,
@@ -99,9 +103,28 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
         const startDate: string = moment(start).startOf("days").format(DEFDATEFORMAT)
         const endDate: string = moment(end).endOf("days").format(DEFDATEFORMAT)
         const timeZone: string = moment.tz.guess()
-        const rawData: RawResultQuery[] = await DailyExpanse.aggregate(
-            expansesSummaryAggr(startDate, endDate, timeZone)
-        );
+        const monthList = getMonthBetweenDateRange(startDate, endDate)
+        const monthArr = monthList.map(item => item.month)
+        const yearArr = monthList.map(item => item.year)
+        const budget: { _id: any, totalBudget: number }[] = await Income.aggregate([
+            {
+                $match: {
+                    month: { $in: monthArr },
+                    year: { $in: yearArr }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalBudget: { $sum: "$budget" }
+                }
+            }
+        ])
+        const dateRange = getDateRangeByArray(monthList)
+        const [rawData, overalRaw]: [RawResultQuery[], RawResultQuery[]] = await Promise.all([
+            DailyExpanse.aggregate(expansesSummaryAggr(startDate, endDate, timeZone)),
+            DailyExpanse.aggregate(expansesSummaryAggr(dateRange.start, dateRange.end, timeZone))
+        ])
 
         if (!rawData.length) return ApiSuccess("Success", []);
 
@@ -124,10 +147,13 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
 
             return acc
         }, {} as Record<string, { date: string, total: number, count: number, avg: number }>);
+        const sumOveral = overalRaw.reduce((acc, item) => acc + item.totalNominal, 0)
         const rawDaily = Object.values(groupDaily).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         const rawType = Object.values(groupType).sort((a, b) => b.total - a.total);
         const result = {
             total: sumNominal,
+            overalExpanses: sumOveral,
+            overalBudget: budget[0].totalBudget,
             avgTransaction: +(sumNominal / sumCount).toFixed(2),
             avgPerDays: +(sumNominal / dayCount).toFixed(2),
             mostSpendType: rawType[0].type,
@@ -135,7 +161,6 @@ export const getSummaryExpanses = async ({ start, end }: GetDailyExpIntfc) => {
             typeSpend: rawType,
         }
 
-        console.log('Get Summary expanses', startDate, endDate)
         return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
