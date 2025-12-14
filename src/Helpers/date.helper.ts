@@ -31,16 +31,15 @@ export const getMonthBetweenDateRange = (startDate: string, endDate: string) => 
 
 export const getDateRangeByArray = (months: { month: string, year: string }[]) => {
     if (!months.length) return {
-        start: moment.utc().toISOString(),
-        end: moment.utc().toISOString()
+        start: moment().utc().toISOString(),
+        end: moment().utc().toISOString()
     };
 
     let min = moment();
     let max = moment();
 
     for (const { month, year } of months) {
-        const current = moment
-            .utc(`${month} ${year}`, 'MMMM YYYY', true);
+        const current = moment(`${month} ${year}`, 'MMMM YYYY', true);
 
         if (!current.isValid()) {
             throw new Error(`Invalid month/year: ${month} ${year}`);
@@ -51,8 +50,8 @@ export const getDateRangeByArray = (months: { month: string, year: string }[]) =
     }
 
     const result: { start: string, end: string } = {
-        start: min.clone().utc().startOf('month').toISOString(),
-        end: max.clone().utc().endOf('month').toISOString()
+        start: min.clone().startOf('month').utc().toISOString(),
+        end: max.clone().endOf('month').utc().toISOString()
     }
 
     return result
