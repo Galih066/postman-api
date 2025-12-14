@@ -52,8 +52,8 @@ export const getDateRangeByArray = (months: { month: string, year: string }[]) =
     }
 
     const result: { start: string, end: string } = {
-        start: min.clone().startOf('month').format(DEFDATEFORMAT),
-        end: max.clone().endOf('month').format(DEFDATEFORMAT)
+        start: min.clone().utc().startOf('month').format(DEFDATEFORMAT),
+        end: max.clone().utc().endOf('month').format(DEFDATEFORMAT)
     }
 
     return result
