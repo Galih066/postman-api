@@ -1,12 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../../Models/user.model.js";
-import { LoginIntfc } from "../../Interfaces/user.interface.js";
+import { LoginIntfc, UserIntfc } from "../../Interfaces/user.interface.js";
 import {
     InternalServerError,
     ApiSuccess,
     BadRequest
 } from "../../Helpers/response.helper.js";
+import Profile from "../../Models/profile.model.js";
 const LENGTH_ROUND: number = 12;
 const { SECRET_KEY } = process.env;
 
@@ -39,6 +40,33 @@ export const handleRegister = async (params: LoginIntfc) => {
         await savedData.save();
 
         return ApiSuccess("Success");
+    } catch (error) {
+        console.log(error);
+        return InternalServerError();
+    }
+}
+
+export const getUser = async (params: UserIntfc) => {
+    try {
+        const email: string = params.email
+        const userExist = await User.findOne({ email })
+
+        if (!userExist) return BadRequest('User not found');
+
+        const profile = await Profile.findOne({ userId: userExist._id })
+        const result = {
+            email: userExist.email,
+            profile: profile
+                ? {
+                    name: profile?.name,
+                    gender: profile?.gender,
+                    phone: profile?.phone,
+                    address: profile?.address
+                }
+                : null
+        }
+        console.log(result)
+        return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
         return InternalServerError();
