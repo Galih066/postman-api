@@ -123,8 +123,6 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc) =
             }
         ])
         const dateRange = getDateRangeByArray(monthList)
-        console.log('Date range raw data', new Date(startDate), new Date(endDate))
-        console.log('Date range overall data', new Date(dateRange.start), new Date(dateRange.end))
         const [rawData, overalRaw]: [RawResultQuery[], RawResultQuery[]] = await Promise.all([
             DailyExpanse.aggregate(expansesSummaryAggr(startDate, endDate, timeZone)),
             DailyExpanse.aggregate(expansesSummaryAggr(dateRange.start, dateRange.end, timeZone))
