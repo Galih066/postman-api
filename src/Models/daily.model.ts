@@ -3,7 +3,7 @@ const { Schema, model } = mongoose;
 
 const dailyExpanseSchema = new Schema(
     {
-        userId: Number,
+        userId: Schema.Types.ObjectId,
         name: String,
         description: String,
         nominal: Number,
