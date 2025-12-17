@@ -1,6 +1,7 @@
 import Joi from "joi";
 
 export const addExpanses = Joi.object({
+    userId: Joi.number().required(),
     name: Joi.string().required(),
     description: Joi.string().required(),
     nominal: Joi.number().required(),

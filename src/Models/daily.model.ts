@@ -3,6 +3,7 @@ const { Schema, model } = mongoose;
 
 const dailyExpanseSchema = new Schema(
     {
+        userId: Number,
         name: String,
         description: String,
         nominal: Number,

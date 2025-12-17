@@ -1,4 +1,5 @@
 export interface DailyExpnsIntfc {
+    userId: string,
     name: string,
     description: string,
     nominal: number,
