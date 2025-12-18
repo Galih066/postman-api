@@ -15,11 +15,11 @@ const { SECRET_KEY } = process.env;
 export const handleLogin = async (params: LoginIntfc) => {
     try {
         const foundUser = await User.findOne({ email: params.email });
-        if (!foundUser) return BadRequest('Email and Password not match any user');
-        const validPassword = await bcrypt.compare(params.password, foundUser.password!);
-        if (!validPassword) return BadRequest('Wrong password provided!');
+        const validPassword = await bcrypt.compare(params.password, foundUser?.password!);
 
-        const token = jwt.sign({ email: foundUser.email }, String(SECRET_KEY));
+        if (!foundUser || !validPassword) return BadRequest('Email and Password not match any user');
+
+        const token = jwt.sign({ context: foundUser.uniqueKey }, String(SECRET_KEY));
         const result = { email: foundUser.email, token };
         return ApiSuccess("Success", result);
     } catch (error) {
@@ -50,10 +50,9 @@ export const handleRegister = async (params: LoginIntfc) => {
     }
 }
 
-export const getUser = async (params: UserIntfc) => {
+export const getUser = async (params: string) => {
     try {
-        const email: string = params.email
-        const userExist = await User.findOne({ email })
+        const userExist = await User.findOne({ uniqueKey: params })
 
         if (!userExist) return BadRequest('User not found');
 
