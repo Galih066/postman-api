@@ -65,7 +65,7 @@ export const getUser = async (params: UserIntfc) => {
                 }
                 : null
         }
-        console.log(result)
+
         return ApiSuccess("Success", result);
     } catch (error) {
         console.log(error);
