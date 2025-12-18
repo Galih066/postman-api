@@ -8,6 +8,7 @@ import {
     BadRequest
 } from "../../Helpers/response.helper.js";
 import Profile from "../../Models/profile.model.js";
+import { randomBytes } from "crypto";
 const LENGTH_ROUND: number = 12;
 const { SECRET_KEY } = process.env;
 
@@ -33,10 +34,13 @@ export const handleRegister = async (params: LoginIntfc) => {
         if (userExist) return BadRequest('User with this email already exist');
 
         const hashedPwd = await bcrypt.hash(params.password, LENGTH_ROUND);
+        const randomByt: string = randomBytes(32).toString('hex')
         const savedData = new User({
             email: params.email,
             password: hashedPwd,
+            uniqueKey: randomByt,
         });
+
         await savedData.save();
 
         return ApiSuccess("Success");
