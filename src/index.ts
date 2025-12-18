@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -7,11 +8,11 @@ import expansesRoute from './Routes/expanses.route.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const cortOptions = { origin: '*' };
+const corsOptions = { origin: '*' };
 
 app.use(morgan('dev'));
 app.use(express.json());
-app.use(cors(cortOptions));
+app.use(cors(corsOptions));
 app.use('/api/auth', authRoute);
 app.use('/api/expanses', expansesRoute);
 
