@@ -21,3 +21,8 @@ export const BadRequest = (message: string, details?: null) => {
     if (details) resp.details = details;
     return resp;
 }
+
+export const NotFound = (message: string) => {
+    const resp: Resp = { statusCode: 404, message };
+    return resp;
+}

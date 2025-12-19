@@ -6,7 +6,7 @@ import {
     GetIncomeIntfc,
     DailyChartIntfc
 } from "../../Interfaces/expanses.interface.js";
-import { InternalServerError, ApiSuccess } from "../../Helpers/response.helper.js";
+import { InternalServerError, ApiSuccess, NotFound } from "../../Helpers/response.helper.js";
 import {
     dateRangeGenerator,
     getMonthBetweenDateRange,
@@ -17,7 +17,7 @@ import {
     sumByFrequence,
     getPercentageChange
 } from "../../Helpers/summary.helper.js";
-import { capitalize } from "../../Helpers/string.helper.js";
+import { capitalize, decodingToken } from "../../Helpers/string.helper.js";
 import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import {
@@ -27,13 +27,21 @@ import {
     monthlyIncomeAggr
 } from "../../Repositories/Expanses/summary.pipeline.js";
 import { DEFDATEFORMAT, DEFMONTH } from "../../Utils/constants.js";
+import { findUserByUniqueKey } from "../../Helpers/data.helper.js";
 
-export const handleDailyExpanses = async (params: DailyExpnsIntfc) => {
+export const handleDailyExpanses = async (params: DailyExpnsIntfc, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const savedData = new DailyExpanse({
             ...params,
+            userId: user._id,
             date: moment(params.date).format(DEFDATEFORMAT)
         });
+
         await savedData.save();
         return ApiSuccess("Success")
     } catch (error) {

@@ -7,8 +7,10 @@ import {
 } from "../../Interfaces/expanses.interface.js";
 
 export const addDaily = async (req: Request, res: Response) => {
+    const reqHeader = req.headers.authorization;
     const reqData = req.body;
-    const data = await ExpanseSvc.handleDailyExpanses(reqData);
+    const token = reqHeader?.split(' ')[1] as string
+    const data = await ExpanseSvc.handleDailyExpanses(reqData, token);
     res.status(data.statusCode).json(data);
 }
 
