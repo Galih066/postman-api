@@ -55,8 +55,10 @@ export const summAnalythic = async (req: Request, res: Response) => {
 }
 
 export const dailyList = async (req: Request, res: Response) => {
+    const reqHeader = req.headers.authorization;
+    const token = reqHeader?.split(' ')[1] as string
     const { page, limit } = req.query as unknown as ExpansesListPaginationIntfc
-    const data = await ExpanseSvc.getExpansesList(page, limit);
+    const data = await ExpanseSvc.getExpansesList(page, limit, token);
     res.status(data.statusCode).json(data);
 }
 

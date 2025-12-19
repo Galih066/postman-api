@@ -285,14 +285,23 @@ export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc, to
     }
 }
 
-export const getExpansesList = async (page: string, limit: string) => {
+export const getExpansesList = async (page: string, limit: string, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const pages = +page || 1
         const limits = +limit || 10
         const skips = (pages - 1) * limits
         const [rawList, total] = await Promise.all([
-            DailyExpanse.find().sort({ createdAt: -1 }).skip(skips).limit(limits),
-            DailyExpanse.countDocuments()
+            DailyExpanse.find({ userId: user._id })
+                .select('name description nominal type frequence date')
+                .sort({ createdAt: -1 })
+                .skip(skips)
+                .limit(limits),
+            DailyExpanse.find({ userId: user._id }).countDocuments()
         ])
         const result = {
             data: rawList,
