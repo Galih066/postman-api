@@ -1,12 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../../Models/user.model.js";
-import { LoginIntfc, UserIntfc } from "../../Interfaces/user.interface.js";
+import { LoginIntfc, AddProfileIntfc } from "../../Interfaces/user.interface.js";
 import {
     InternalServerError,
     ApiSuccess,
     BadRequest
 } from "../../Helpers/response.helper.js";
+import { generatingToken, decodingToken } from "../../Helpers/string.helper.js";
 import Profile from "../../Models/profile.model.js";
 import { randomBytes } from "crypto";
 const LENGTH_ROUND: number = 12;
@@ -19,7 +20,7 @@ export const handleLogin = async (params: LoginIntfc) => {
 
         if (!foundUser || !validPassword) return BadRequest('Email and Password not match any user');
 
-        const token = jwt.sign({ context: foundUser.uniqueKey }, String(SECRET_KEY));
+        const token = generatingToken({ context: foundUser.uniqueKey })
         const result = { email: foundUser.email, token };
         return ApiSuccess("Success", result);
     } catch (error) {
