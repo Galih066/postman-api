@@ -67,14 +67,15 @@ export const expansesSummaryAggr = (startDate: string, endDate: string, timeZone
     }
 ];
 
-export const dailyChartAggr = (startDate: string, endDate: string, timeZone: string): PipelineStage[] => [
+export const dailyChartAggr = (startDate: string, endDate: string, timeZone: string, userId: Types.ObjectId): PipelineStage[] => [
     {
         $match: {
             date: {
                 $gte: new Date(startDate),
                 $lte: new Date(endDate),
             },
-            frequence: { $in: ["FREQ-000", "FREQ-001"] }
+            frequence: { $in: ["FREQ-000", "FREQ-001"] },
+            userId
         }
     },
     {

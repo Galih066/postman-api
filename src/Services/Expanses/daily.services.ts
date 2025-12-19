@@ -199,17 +199,20 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc, t
     }
 }
 
-export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc) => {
+export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const timeZone = tz || moment.tz.guess()
         const start = moment.tz(timeZone).month(month).year(+year).startOf("month").utc().toISOString();
         const end = moment.tz(timeZone).month(month).year(+year).endOf("month").utc().toISOString();
         const arrDateRange = dateRangeGenerator(start, end);
-        const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(
-            dailyChartAggr(start, end, tz)
-        );
-
+        const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(dailyChartAggr(start, end, tz, user._id));
         const result: { date: string, total: number }[] = [];
+
         arrDateRange.forEach(item => {
             const defaultVal = { date: item, total: 0 };
             const foundData = rawSummary.find(value => item === value.date);
