@@ -18,3 +18,12 @@ export const user = async (req: Request, res: Response): Promise<void> => {
     const result = await AuthServices.getUser(reqData);
     res.status(result.statusCode).json(result);
 }
+
+export const addProfile = async (req: Request, res: Response): Promise<void> => {
+    const reqData = req.body
+    const headerData = req.headers.authorization
+    const token = headerData?.split(' ')[1]
+    const allReq = { ...reqData, userId: token }
+    const result = await AuthServices.addNewProfile(allReq);
+    res.status(result.statusCode).json(result);
+}

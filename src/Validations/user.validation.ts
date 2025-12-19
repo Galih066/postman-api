@@ -8,3 +8,10 @@ export const loginUser = Joi.object({
 export const getUser = Joi.object({
     email: Joi.string().email().required()
 });
+
+export const addProfile = Joi.object({
+    name: Joi.string().required(),
+    gender: Joi.string().valid('male', 'female').required(),
+    phone: Joi.number().required(),
+    address: Joi.string().required(),
+});

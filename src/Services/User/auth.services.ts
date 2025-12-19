@@ -1,5 +1,4 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import User from "../../Models/user.model.js";
 import { LoginIntfc, AddProfileIntfc } from "../../Interfaces/user.interface.js";
 import {
@@ -7,7 +6,11 @@ import {
     ApiSuccess,
     BadRequest
 } from "../../Helpers/response.helper.js";
-import { generatingToken, decodingToken } from "../../Helpers/string.helper.js";
+import {
+    generatingToken,
+    decodingToken,
+    capitalize
+} from "../../Helpers/string.helper.js";
 import Profile from "../../Models/profile.model.js";
 import { randomBytes } from "crypto";
 const LENGTH_ROUND: number = 12;
@@ -71,6 +74,34 @@ export const getUser = async (params: string) => {
         }
 
         return ApiSuccess("Success", result);
+    } catch (error) {
+        console.log(error);
+        return InternalServerError();
+    }
+}
+
+export const addNewProfile = async (params: AddProfileIntfc) => {
+    try {
+        const userId = decodingToken(params.userId)
+        const foundUser = await User.findOne({ uniqueKey: userId })
+
+        if (!foundUser) return BadRequest('User not found');
+
+        const foundProfl = await Profile.findOne({ userId: foundUser?._id })
+
+        if (foundProfl) return BadRequest('User already have a profile');
+
+        const profileInstc = new Profile({
+            userId: foundUser._id,
+            name: capitalize(params.name),
+            gender: params.gender,
+            phone: params.phone,
+            address: capitalize(params.address),
+        })
+
+        await profileInstc.save()
+
+        return ApiSuccess("Success")
     } catch (error) {
         console.log(error);
         return InternalServerError();

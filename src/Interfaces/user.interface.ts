@@ -6,3 +6,11 @@ export interface LoginIntfc {
 export interface UserIntfc {
     email: string
 }
+
+export interface AddProfileIntfc {
+    name: string
+    gender: string
+    phone: number
+    address: string
+    userId: string
+}
