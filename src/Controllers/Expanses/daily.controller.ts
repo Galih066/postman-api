@@ -15,8 +15,10 @@ export const addDaily = async (req: Request, res: Response) => {
 }
 
 export const getDaily = async (req: Request, res: Response) => {
+    const reqHeader = req.headers.authorization;
+    const token = reqHeader?.split(' ')[1] as string
     const { start, end, tz } = req.query as unknown as GetDailyExpIntfc;
-    const data = await ExpanseSvc.getDailyExpanses({ start, end, tz });
+    const data = await ExpanseSvc.getDailyExpanses({ start, end, tz }, token);
     res.status(data.statusCode).json(data);
 }
 

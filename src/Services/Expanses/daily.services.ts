@@ -50,13 +50,21 @@ export const handleDailyExpanses = async (params: DailyExpnsIntfc, token: string
     }
 }
 
-export const getDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc) => {
+export const getDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const timeZone = tz || moment.tz.guess()
         const startDate = moment.tz(start, timeZone).startOf("days").utc().toISOString()
         const endDate = moment.tz(end, timeZone).endOf("days").utc().toISOString()
         const dailyData = await DailyExpanse
-            .find({ date: { $gte: new Date(startDate), $lte: new Date(endDate) } })
+            .find({
+                date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+                userId: user._id
+            })
             .sort({ type: 1 });
 
         return ApiSuccess("Success", dailyData);
