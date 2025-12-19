@@ -320,14 +320,20 @@ export const getExpansesList = async (page: string, limit: string, token: string
     }
 }
 
-export const getMonthlySummary = async (params: any) => {
+export const getMonthlySummary = async (params: any, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const timeZone = params.tz;
-        const incomeYear = await Income.aggregate(monthlyIncomeAggr());
-        const expanses = await DailyExpanse.aggregate(monthlySummaryAggr(timeZone));
+        const incomeYear = await Income.aggregate(monthlyIncomeAggr(user._id));
+        const expanses = await DailyExpanse.aggregate(monthlySummaryAggr(timeZone, user._id));
         const mappingExpanses = expanses.map(item => ({ ...item, monthName: DEFMONTH[item.month].toLowerCase() }));
         const result: any = [];
         const mapIncome = new Map(incomeYear.map(item => [`${item.year}-${item.month}`, item.budget]));
+
         mappingExpanses.forEach(item => {
             const key = `${item.year}-${item.monthName}`;
             result.push({

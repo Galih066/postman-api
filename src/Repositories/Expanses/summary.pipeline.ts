@@ -110,7 +110,8 @@ export const dailyChartAggr = (startDate: string, endDate: string, timeZone: str
     }
 ]
 
-export const monthlySummaryAggr = (timeZone: string): PipelineStage[] => [
+export const monthlySummaryAggr = (timeZone: string, user: Types.ObjectId): PipelineStage[] => [
+    { $match: { userId: user } },
     {
         $addFields: {
             year: { $year: { date: "$date", timezone: timeZone } },
@@ -142,7 +143,8 @@ export const monthlySummaryAggr = (timeZone: string): PipelineStage[] => [
     }
 ]
 
-export const monthlyIncomeAggr = (): PipelineStage[] => [
+export const monthlyIncomeAggr = (user: Types.ObjectId): PipelineStage[] => [
+    { $match: { userId: user } },
     {
         $group: {
             _id: {
