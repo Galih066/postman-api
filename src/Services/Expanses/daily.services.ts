@@ -75,8 +75,13 @@ export const getDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc, tok
     }
 }
 
-export const getNonDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc) => {
+export const getNonDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const timeZone = tz || moment.tz.guess()
         const startDate = moment.tz(start, timeZone).startOf("days").utc().toISOString()
         const endDate = moment.tz(end, timeZone).endOf("days").utc().toISOString()
@@ -84,7 +89,8 @@ export const getNonDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc) 
             {
                 $match: {
                     date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-                    frequence: { $in: ["FREQ-002", "FREQ-003"] }
+                    frequence: { $in: ["FREQ-002", "FREQ-003"] },
+                    userId: user._id
                 }
             },
             {

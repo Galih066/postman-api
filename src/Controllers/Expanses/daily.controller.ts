@@ -23,8 +23,10 @@ export const getDaily = async (req: Request, res: Response) => {
 }
 
 export const getNonDaily = async (req: Request, res: Response) => {
+    const reqHeader = req.headers.authorization;
+    const token = reqHeader?.split(' ')[1] as string
     const { start, end, tz } = req.query as unknown as GetDailyExpIntfc;
-    const data = await ExpanseSvc.getNonDailyExpanses({ start, end, tz });
+    const data = await ExpanseSvc.getNonDailyExpanses({ start, end, tz }, token);
     res.status(data.statusCode).json(data);
 }
 
