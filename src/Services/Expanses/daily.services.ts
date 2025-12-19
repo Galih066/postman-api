@@ -65,6 +65,7 @@ export const getDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc, tok
                 date: { $gte: new Date(startDate), $lte: new Date(endDate) },
                 userId: user._id
             })
+            .select('name description nominal type frequence date -_id')
             .sort({ type: 1 });
 
         return ApiSuccess("Success", dailyData);
@@ -116,8 +117,13 @@ export const getNonDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc) 
     }
 }
 
-export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc) => {
+export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const timeZone: string = tz || moment.tz.guess()
         const startDate: string = moment.tz(start, timeZone).startOf("days").utc().toISOString()
         const endDate: string = moment.tz(end, timeZone).endOf("days").utc().toISOString()
@@ -128,7 +134,8 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc) =
             {
                 $match: {
                     month: { $in: monthArr },
-                    year: { $in: yearArr }
+                    year: { $in: yearArr },
+                    userId: user._id
                 }
             },
             {
@@ -140,8 +147,8 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc) =
         ])
         const dateRange = getDateRangeByArray(monthList)
         const [rawData, overalRaw]: [RawResultQuery[], RawResultQuery[]] = await Promise.all([
-            DailyExpanse.aggregate(expansesSummaryAggr(startDate, endDate, timeZone)),
-            DailyExpanse.aggregate(expansesSummaryAggr(dateRange.start, dateRange.end, timeZone))
+            DailyExpanse.aggregate(expansesSummaryAggr(startDate, endDate, timeZone, user._id)),
+            DailyExpanse.aggregate(expansesSummaryAggr(dateRange.start, dateRange.end, timeZone, user._id))
         ])
 
         if (!rawData.length) return ApiSuccess("Success", []);

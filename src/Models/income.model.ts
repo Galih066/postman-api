@@ -3,6 +3,7 @@ const { Schema, model } = mongoose;
 
 const incomeSchema = new Schema(
     {
+        userId: Schema.Types.ObjectId,
         name: String,
         month: String,
         year: String,

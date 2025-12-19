@@ -1,9 +1,10 @@
-import { PipelineStage } from "mongoose";
+import { PipelineStage, Types } from "mongoose";
 
-export const expansesSummaryAggr = (startDate: string, endDate: string, timeZone: string) => [
+export const expansesSummaryAggr = (startDate: string, endDate: string, timeZone: string, userId: Types.ObjectId) => [
     {
         $match: {
-            date: { $gte: new Date(startDate), $lte: new Date(endDate) }
+            date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+            userId
         }
     },
     {
