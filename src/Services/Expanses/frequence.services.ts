@@ -27,7 +27,7 @@ export const handleAddFrequences = async (params: any, token: string) => {
         if (!user) return NotFound('User not found')
 
         const existingType = await Frequence
-            .findOne()
+            .findOne({ userId: user._id })
             .select('number')
             .sort({ createdAt: -1 });
         const initial: string = existingType ? `${existingType.number + 1}` : `0`;

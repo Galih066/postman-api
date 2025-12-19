@@ -3,6 +3,7 @@ const { Schema, model } = mongoose;
 
 const typeSchema = new Schema(
     {
+        userId: Schema.Types.ObjectId,
         code: String,
         name: String,
         number: { type: Number, required: true },
