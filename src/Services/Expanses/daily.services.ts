@@ -227,8 +227,13 @@ export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc, token: 
     }
 }
 
-export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc) => {
+export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const timeZone = tz || moment.tz.guess()
         const start = moment.tz(timeZone).month(month).year(+year).startOf("month").utc().toISOString();
         const end = moment.tz(timeZone).month(month).year(+year).endOf("month").utc().toISOString();
@@ -237,10 +242,10 @@ export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc) =>
         const lastMonthName = moment(lastMonthStart).format('MMMM').toLowerCase();
         const yearAdjustment = moment(lastMonthStart).format('YYYY');
         const [expanses, lastMnthExp, income, lastMnthInc] = await Promise.all([
-            DailyExpanse.aggregate(expansesSummaryAggr(start, end, tz)),
-            DailyExpanse.aggregate(expansesSummaryAggr(lastMonthStart, lastMonthEnd, tz)),
-            Income.find({ month: month.toLowerCase(), year }).select('createdAt actual budget'),
-            Income.find({ month: lastMonthName, year: yearAdjustment }).select('createdAt actual budget')
+            DailyExpanse.aggregate(expansesSummaryAggr(start, end, tz, user._id)),
+            DailyExpanse.aggregate(expansesSummaryAggr(lastMonthStart, lastMonthEnd, tz, user._id)),
+            Income.find({ month: month.toLowerCase(), year, userId: user._id }).select('createdAt actual budget'),
+            Income.find({ month: lastMonthName, year: yearAdjustment, userId: user._id }).select('createdAt actual budget')
         ]);
         const totalExpanses = expanses.reduce((acc, item) => acc + item.totalNominal, 0);
         const totalIncome = income.reduce((acc, item) => acc + item.actual, 0);
