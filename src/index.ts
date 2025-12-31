@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import connection from './Config/database.config.js';
 import authRoute from './Routes/auth.route.js';
 import expansesRoute from './Routes/expanses.route.js';
+import mobile from './Routes/mobile.route.js'
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use(cors(corsOptions));
 app.use('/api/auth', authRoute);
 app.use('/api/expanses', expansesRoute);
+app.use('/api/mobile', mobile);
 
 app.get('/', (req: Request, res: Response) => {
 	res.json({ message: 'Welcome to the API!' });

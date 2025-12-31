@@ -14,16 +14,16 @@ export const dateRangeGenerator = (start: string, end: string) => {
 export const getMonthBetweenDateRange = (startDate: string, endDate: string) => {
     const start = moment(startDate).startOf('month');
     const end = moment(endDate).startOf('month');
-
+    const current = start.clone();
     const result = [];
 
-    while (start.isSameOrBefore(end)) {
+    while (current.isSameOrBefore(end)) {
         result.push({
-            month: start.format('MMMM').toLowerCase(),
-            year: start.format('YYYY')
+            month: current.format('MMMM').toLowerCase(),
+            year: current.format('YYYY')
         });
 
-        start.add(1, 'month');
+        current.add(1, 'month');
     }
 
     return result;
