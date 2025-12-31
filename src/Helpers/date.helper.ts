@@ -41,10 +41,7 @@ export const getDateRangeByArray = (months: { month: string, year: string }[]) =
     for (const { month, year } of months) {
         const current = moment(`${month} ${year}`, 'MMMM YYYY', true);
 
-        if (!current.isValid()) {
-            throw new Error(`Invalid month/year: ${month} ${year}`);
-        }
-
+        if (!current.isValid()) throw new Error(`Invalid month/year: ${month} ${year}`);
         if (!min || current.isBefore(min)) min = current;
         if (!max || current.isAfter(max)) max = current;
     }
