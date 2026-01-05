@@ -1,4 +1,5 @@
 import moment from "moment";
+import { DEFMONTHORDER } from "../Utils/constants.js";
 
 export const dateRangeGenerator = (start: string, end: string) => {
     const arrDateRange = [];
@@ -20,7 +21,8 @@ export const getMonthBetweenDateRange = (startDate: string, endDate: string) => 
     while (current.isSameOrBefore(end)) {
         result.push({
             month: current.format('MMMM').toLowerCase(),
-            year: current.format('YYYY')
+            year: +current.format('YYYY'),
+            order: DEFMONTHORDER[current.format('MMMM').toLowerCase()]
         });
 
         current.add(1, 'month');
