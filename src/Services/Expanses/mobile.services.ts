@@ -17,9 +17,16 @@ export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: str
 
         const start = moment(params.start).startOf('days').format('YYYY-MM-DD HH:mm:ss');
         const end = moment(params.end).endOf('days').format('YYYY-MM-DD HH:mm:ss');
-        const rawMonthRange = getMonthBetweenDateRange(start, end);
+        const rawMonthRange = getMonthBetweenDateRange(start, end).sort((a, b) => {
+            if (a.year !== b.year) return a.year - b.year;
+            return a.order - b.order;
+        });
         const month = [...new Set(rawMonthRange.map(item => item.month.toLowerCase()))];
         const year = [...new Set(rawMonthRange.map(item => +item.year))];
+        const firstData = rawMonthRange[0]
+        const lastData = rawMonthRange[rawMonthRange.length - 1]
+        const stMonthly = moment().month(firstData.order - 1).year(firstData.year).startOf('months').startOf('days').format(DEFDATEFORMAT)
+        const endMonthly = moment().month(lastData.order - 1).year(lastData.year).endOf('months').endOf('days').format(DEFDATEFORMAT)
         const expanses = await DailyExpanse.aggregate([
             { $match: { createdAt: { $gte: new Date(start), $lte: new Date(end) } } },
             {
