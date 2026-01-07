@@ -1,5 +1,5 @@
 import moment from "moment";
-import { DEFMONTHORDER } from "../Utils/constants.js";
+import { DEFMONTHORDER } from "../utils/constants.js";
 
 export const dateRangeGenerator = (start: string, end: string) => {
     const arrDateRange = [];

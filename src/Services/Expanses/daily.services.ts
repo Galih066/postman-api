@@ -26,7 +26,7 @@ import {
     monthlySummaryAggr,
     monthlyIncomeAggr
 } from "../../Repositories/Expanses/summary.pipeline.js";
-import { DEFDATEFORMAT, DEFMONTH } from "../../Utils/constants.js";
+import { DEFDATEFORMAT, DEFMONTH } from "../../utils/constants.js";
 import { findUserByUniqueKey } from "../../Helpers/data.helper.js";
 
 export const handleDailyExpanses = async (params: DailyExpnsIntfc, token: string) => {
