@@ -22,9 +22,16 @@ app.get('/', (req: Request, res: Response) => {
 	res.json({ message: 'Welcome to the API!' });
 });
 
-connection();
-app.listen(+PORT, '127.0.0.1', () => {
-	console.log(`Server is running on port ${PORT}`);
+// Start database connection asynchronously (non-blocking)
+connection().catch(err => {
+	console.error('Failed to connect to database:', err);
+	// Don't exit immediately, allow health checks to respond
+});
+
+// Listen on 0.0.0.0 for Cloud Run (not 127.0.0.1)
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(+PORT, HOST, () => {
+	console.log(`Server is running on ${HOST}:${PORT}`);
 });
 
 export default app;
