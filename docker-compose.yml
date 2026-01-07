@@ -3,7 +3,7 @@ services:
   app:
     build: .
     ports:
-      - "6000:6000"
+      - "8080:8080"
     restart: always
     volumes:
       - .:/app

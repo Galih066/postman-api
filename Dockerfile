@@ -12,9 +12,6 @@ RUN npm run build
 # Step 2: Production Stage
 FROM node:22-alpine
 
-# Set timezone to Makassae (adjust if needed)
-ENV TZ=Asia/Makassar
-
 WORKDIR /app
 
 COPY --from=builder /app/package*.json ./
@@ -22,5 +19,5 @@ RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 6000
+EXPOSE 8080
 CMD ["node", "dist/index.js"]
