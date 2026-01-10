@@ -241,7 +241,7 @@ export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc, to
         const end = moment.tz(timeZone).month(month).year(+year).endOf("month").utc().toISOString();
         const lastMonthStart = moment.tz(timeZone).month(month).year(+year).subtract({ month: 1 }).startOf("month").utc().toISOString();
         const lastMonthEnd = moment.tz(timeZone).month(month).year(+year).subtract({ month: 1 }).endOf("month").utc().toISOString();
-        const lastMonthName = moment(lastMonthStart).format('MMMM').toLowerCase();
+        const lastMonthName = moment().month(month).subtract({ months: 1 }).format('MMMM').toLowerCase();
         const yearAdjustment = moment(lastMonthStart).format('YYYY');
         const [expanses, lastMnthExp, income, lastMnthInc] = await Promise.all([
             DailyExpanse.aggregate(expansesSummaryAggr(start, end, tz, user._id)),
