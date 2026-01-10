@@ -139,8 +139,10 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc, t
         const budget: { _id: any, totalBudget: number }[] = await Income.aggregate([
             {
                 $match: {
-                    month: { $in: monthArr },
-                    year: { $in: yearArr },
+                    $or: [
+                        { month: { $in: monthArr } },
+                        { year: { $in: yearArr } }
+                    ],
                     userId: user._id
                 }
             },
@@ -184,7 +186,7 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc, t
         const result = {
             total: sumNominal,
             overalExpanses: sumOveral,
-            overalBudget: budget[0].totalBudget,
+            overalBudget: budget[0]?.totalBudget ?? 0,
             avgTransaction: +(sumNominal / sumCount).toFixed(2),
             avgPerDays: +(sumNominal / dayCount).toFixed(2),
             mostSpendType: rawType[0].type,
