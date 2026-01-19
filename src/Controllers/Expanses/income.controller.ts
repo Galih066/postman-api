@@ -13,3 +13,8 @@ export const getUserIncome = async (req: Request, res: Response) => {
     const data = await IncomeService.getIncome(reqData);
     res.status(data.statusCode).json(data);
 }
+
+export const addDefaultIncomeUser = async (req: Request, res: Response) => {
+    const data = await IncomeService.addDefaultIncome()
+    res.status(data.statusCode).json(data);
+}
