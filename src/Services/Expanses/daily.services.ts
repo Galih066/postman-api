@@ -211,7 +211,7 @@ export const getDailyChart = async ({ month, year, tz }: GetIncomeIntfc, token: 
         const timeZone = tz || moment.tz.guess()
         const start = moment.tz(timeZone).month(month).year(+year).startOf("month").utc().toISOString();
         const end = moment.tz(timeZone).month(month).year(+year).endOf("month").utc().toISOString();
-        const arrDateRange = dateRangeGenerator(start, end);
+        const arrDateRange = dateRangeGenerator(start, end, timeZone);
         const rawSummary: DailyChartIntfc[] = await DailyExpanse.aggregate(dailyChartAggr(start, end, tz, user._id));
         const result: { date: string, total: number }[] = [];
 

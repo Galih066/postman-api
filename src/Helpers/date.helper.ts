@@ -1,9 +1,9 @@
-import moment from "moment";
+import moment from "moment-timezone";
 import { DEFMONTHORDER } from "../utils/constants.js";
 
-export const dateRangeGenerator = (start: string, end: string) => {
+export const dateRangeGenerator = (start: string, end: string, timezone: string) => {
     const arrDateRange = [];
-    const current = moment(start);
+    const current = moment(start).tz(timezone);
     while (current.isSameOrBefore(end, 'day')) {
         arrDateRange.push(current.format('YYYY-MM-DD'));
         current.add(1, 'day');
