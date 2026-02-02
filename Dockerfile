@@ -47,5 +47,8 @@ EXPOSE 8080
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 
+# Set timezone to UTC (consistent with package.json scripts)
+ENV TZ=UTC
+
 # Start the application
 CMD ["node", "dist/index.js"]

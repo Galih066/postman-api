@@ -5,9 +5,9 @@
 2. Run `npm install`
 
 ## Available Scripts
-- `npm start`: Run the development server
+- `npm run dev`: Run the development server
 - `npm run build`: Compile TypeScript to JavaScript
-- `npm run serve`: Run the compiled JavaScript server
+- `npm start`: Run production
 
 ## Development
 - Source files are in `src/`
