@@ -7,11 +7,14 @@ import {
 } from "../../Interfaces/expanses.interface.js";
 import {
     ApiSuccess,
-    InternalServerError
+    InternalServerError,
+    NotFound
 } from "../../Helpers/response.helper.js";
 import { DEFDATEFORMAT } from '../../utils/constants.js';
+import { decodingToken } from '../../Helpers/string.helper.js';
+import { findUserByUniqueKey } from '../../Helpers/data.helper.js';
 
-export const addIncome = async (params: AddIncomeIntfc) => {
+export const addIncome = async (params: AddIncomeIntfc, token: string) => {
     try {
         const dataToSave = { ...params, month: params.month.toLowerCase() }
         const incomeData = new Income(dataToSave);
@@ -24,7 +27,7 @@ export const addIncome = async (params: AddIncomeIntfc) => {
     }
 }
 
-export const getIncome = async (params: GetIncomeIntfc) => {
+export const getIncome = async (params: GetIncomeIntfc, token: string) => {
     try {
         const incomeData = await Income
             .find({ month: params.month.toLowerCase(), year: params.year })
@@ -36,6 +39,42 @@ export const getIncome = async (params: GetIncomeIntfc) => {
             budgetTreshold,
             details: incomeData
         };
+
+        return ApiSuccess("Success", result);
+    } catch (error) {
+        console.error(error)
+        return InternalServerError();
+    }
+}
+
+export const getAllIncome = async (token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
+        const income = await Income.aggregate([
+            { $match: { userId: user._id } },
+            {
+                $group: {
+                    _id: { month: "$month", year: "$year" },
+                    month: { $first: "$month" },
+                    year: { $first: "$year" },
+                    createdAt: { $first: "$createdAt" },
+                    count: { $sum: 1 },
+                    income: { $sum: "$actual" },
+                    budget: { $sum: "$budget" }
+                }
+            },
+            { $project: { _id: 0 } },
+            { $sort: { createdAt: -1 } }
+        ]);
+
+        const result = income.map(item => {
+            const { createdAt, ...rest } = item
+            return rest
+        })
 
         return ApiSuccess("Success", result);
     } catch (error) {
