@@ -28,6 +28,8 @@ import {
 } from "../../Repositories/Expanses/summary.pipeline.js";
 import { DEFDATEFORMAT, DEFMONTH } from "../../utils/constants.js";
 import { findUserByUniqueKey } from "../../Helpers/data.helper.js";
+import Frequence from "../../Models/frequence.model.js";
+import Type from "../../Models/type.model.js";
 
 export const handleDailyExpanses = async (params: DailyExpnsIntfc, token: string) => {
     try {
@@ -297,16 +299,30 @@ export const getExpansesList = async (page: string, limit: string, token: string
         const pages = +page || 1
         const limits = +limit || 10
         const skips = (pages - 1) * limits
-        const [rawList, total] = await Promise.all([
+        const [rawList, total, freq, type] = await Promise.all([
             DailyExpanse.find({ userId: user._id })
                 .select('name description nominal type frequence date')
                 .sort({ createdAt: -1 })
                 .skip(skips)
                 .limit(limits),
-            DailyExpanse.find({ userId: user._id }).countDocuments()
+            DailyExpanse.find({ userId: user._id }).countDocuments(),
+            Frequence.find({}).select('code name'),
+            Type.find({}).select('code name')
         ])
+
+        const mapFreq = new Map(freq.map(item => [item.code, item.name]));
+        const mapType = new Map(type.map(item => [item.code, item.name]));
+        const mappingRaw = rawList.map(item => ({
+            name: item.name,
+            description: item.description,
+            nominal: item.nominal,
+            type: mapType.get(item.type),
+            frequence: mapFreq.get(item.frequence),
+            date: item.date
+        }))
+
         const result = {
-            data: rawList,
+            data: mappingRaw,
             paginations: {
                 total,
                 pages,
