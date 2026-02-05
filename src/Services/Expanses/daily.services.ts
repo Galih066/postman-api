@@ -313,6 +313,7 @@ export const getExpansesList = async (page: string, limit: string, token: string
         const mapFreq = new Map(freq.map(item => [item.code, item.name]));
         const mapType = new Map(type.map(item => [item.code, item.name]));
         const mappingRaw = rawList.map(item => ({
+            id: item._id,
             name: item.name,
             description: item.description,
             nominal: item.nominal,
