@@ -16,7 +16,12 @@ import { findUserByUniqueKey } from '../../Helpers/data.helper.js';
 
 export const addIncome = async (params: AddIncomeIntfc, token: string) => {
     try {
-        const dataToSave = { ...params, month: params.month.toLowerCase() }
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
+        const dataToSave = { ...params, month: params.month.toLowerCase(), userId: user._id }
         const incomeData = new Income(dataToSave);
         await incomeData.save();
 
@@ -29,8 +34,13 @@ export const addIncome = async (params: AddIncomeIntfc, token: string) => {
 
 export const getIncome = async (params: GetIncomeIntfc, token: string) => {
     try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const incomeData = await Income
-            .find({ month: params.month.toLowerCase(), year: params.year })
+            .find({ month: params.month.toLowerCase(), year: params.year, userId: user._id })
             .select('number name actual budget');
         const totalIncome = incomeData.reduce((acc, item) => (acc + item.actual), 0);
         const budgetTreshold = incomeData.reduce((acc, item) => (acc + item.budget), 0);
