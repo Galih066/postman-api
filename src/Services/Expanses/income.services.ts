@@ -3,7 +3,8 @@ import Income from "../../Models/income.model.js";
 import User from '../../Models/user.model.js';
 import {
     AddIncomeIntfc,
-    GetIncomeIntfc
+    GetIncomeIntfc,
+    UpdateIncomeIntfc
 } from "../../Interfaces/expanses.interface.js";
 import {
     ApiSuccess,
@@ -25,6 +26,21 @@ export const addIncome = async (params: AddIncomeIntfc, token: string) => {
         const incomeData = new Income(dataToSave);
         await incomeData.save();
 
+        return ApiSuccess("Success");
+    } catch (error) {
+        console.error(error)
+        return InternalServerError();
+    }
+}
+
+export const updateIncome = async (params: UpdateIncomeIntfc, token: string) => {
+    try {
+        const uniqueKey = decodingToken(token);
+        const user = await findUserByUniqueKey(String(uniqueKey));
+
+        if (!user) return NotFound('User not found');
+
+        await Income.findOneAndUpdate({ _id: params.incomeId }, params);
         return ApiSuccess("Success");
     } catch (error) {
         console.error(error)

@@ -32,6 +32,15 @@ export const addInc = Joi.object({
     budget: Joi.number().required(),
 });
 
+export const updInc = Joi.object({
+    incomeId: Joi.string().required(),
+    name: Joi.string().required(),
+    month: Joi.string().required(),
+    year: Joi.string().required(),
+    actual: Joi.number().required(),
+    budget: Joi.number().required(),
+});
+
 export const getInc = Joi.object({
     tz: Joi.string().optional().allow(''),
     month: Joi.string().required(),

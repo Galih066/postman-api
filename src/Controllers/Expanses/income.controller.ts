@@ -10,6 +10,14 @@ export const addUserIncome = async (req: Request, res: Response) => {
     res.status(data.statusCode).json(data);
 }
 
+export const updateUserIncome = async (req: Request, res: Response) => {
+    const reqHeader = req.headers.authorization;
+    const token = reqHeader?.split(' ')[1] as string
+    const reqData = req.body;
+    const data = await IncomeService.updateIncome(reqData, token);
+    res.status(data.statusCode).json(data);
+}
+
 export const getUserIncome = async (req: Request, res: Response) => {
     const reqHeader = req.headers.authorization;
     const token = reqHeader?.split(' ')[1] as string
