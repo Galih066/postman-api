@@ -88,18 +88,21 @@ export const addNewProfile = async (params: AddProfileIntfc) => {
         if (!foundUser) return BadRequest('User not found');
 
         const foundProfl = await Profile.findOne({ userId: foundUser?._id })
-
-        if (foundProfl) return BadRequest('User already have a profile');
-
-        const profileInstc = new Profile({
+        const profileData = {
             userId: foundUser._id,
             name: capitalize(params.name),
             gender: params.gender,
             phone: params.phone,
             address: capitalize(params.address),
-        })
+        }
 
-        await profileInstc.save()
+        if (foundProfl) {
+            const { userId, ...rest } = profileData;
+            await Profile.updateOne({ userId: foundUser._id }, rest);
+        } else {
+            const profileInstc = new Profile(profileData);
+            await profileInstc.save();
+        }
 
         return ApiSuccess("Success")
     } catch (error) {
