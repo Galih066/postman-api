@@ -91,7 +91,7 @@ export const getNonDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc, 
             {
                 $match: {
                     date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-                    frequence: { $in: ["FREQ-002", "FREQ-003"] },
+                    frequence: { $nin: ["FREQ-000", "FREQ-001"] },
                     userId: user._id
                 }
             },
@@ -245,7 +245,7 @@ export const getSummaryAnalysis = async ({ month, year, tz }: GetIncomeIntfc, to
         const lastMonthEnd = moment.tz(timeZone).month(month).year(+year).subtract({ month: 1 }).endOf("month").utc().toISOString();
         const lastMonthName = moment().month(month).subtract({ months: 1 }).format('MMMM').toLowerCase();
         const yearAdjustment = moment(lastMonthStart).format('YYYY');
-        const [expanses, lastMnthExp, income, lastMnthInc] = await Promise.all([
+        const [expanses, lastMnthExp, income, lastMnthInc]: [any[], any[], any[], any[]] = await Promise.all([
             DailyExpanse.aggregate(expansesSummaryAggr(start, end, tz, user._id)),
             DailyExpanse.aggregate(expansesSummaryAggr(lastMonthStart, lastMonthEnd, tz, user._id)),
             Income.find({ month: month.toLowerCase(), year, userId: user._id }).select('createdAt actual budget'),
