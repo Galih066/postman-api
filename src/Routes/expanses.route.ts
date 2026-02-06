@@ -12,7 +12,8 @@ import {
     addFreq,
     addInc,
     getInc,
-    expansesList
+    expansesList,
+    updInc
 } from "../Validations/expanses.validation.js";
 
 const router = Router();
@@ -25,6 +26,8 @@ router.get('/get-freq', tokenValidation, FreqController.allFreq);
 router.post('/add-freq', [tokenValidation, validation(addFreq, 'body')], FreqController.addFreq);
 router.get('/get-summary', [tokenValidation, validation(dailyExpanses, 'query')], ExpansesController.getSummary);
 router.post('/add-income', [tokenValidation, validation(addInc, 'body')], IncomeController.addUserIncome);
+router.put('/upd-income', [tokenValidation, validation(updInc, 'body')], IncomeController.updateUserIncome);
+router.get('/all-income', tokenValidation, IncomeController.getAllUserIncome);
 router.get('/get-income', [tokenValidation, validation(getInc, 'query')], IncomeController.getUserIncome);
 router.get('/daily-chart', [tokenValidation, validation(getInc, 'query')], ExpansesController.dailyChart);
 router.get('/summary-analythic', [tokenValidation, validation(getInc, 'query')], ExpansesController.summAnalythic);

@@ -31,6 +31,15 @@ export interface AddIncomeIntfc {
     budget: number;
 }
 
+export interface UpdateIncomeIntfc {
+    incomeId: string
+    actual: number
+    budget: number
+    month: string
+    name: string
+    year: string
+}
+
 export interface GetIncomeIntfc {
     tz?: any;
     month: string;

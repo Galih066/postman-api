@@ -3,17 +3,26 @@ import Income from "../../Models/income.model.js";
 import User from '../../Models/user.model.js';
 import {
     AddIncomeIntfc,
-    GetIncomeIntfc
+    GetIncomeIntfc,
+    UpdateIncomeIntfc
 } from "../../Interfaces/expanses.interface.js";
 import {
     ApiSuccess,
-    InternalServerError
+    InternalServerError,
+    NotFound
 } from "../../Helpers/response.helper.js";
 import { DEFDATEFORMAT } from '../../utils/constants.js';
+import { decodingToken } from '../../Helpers/string.helper.js';
+import { findUserByUniqueKey } from '../../Helpers/data.helper.js';
 
-export const addIncome = async (params: AddIncomeIntfc) => {
+export const addIncome = async (params: AddIncomeIntfc, token: string) => {
     try {
-        const dataToSave = { ...params, month: params.month.toLowerCase() }
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
+        const dataToSave = { ...params, month: params.month.toLowerCase(), userId: user._id }
         const incomeData = new Income(dataToSave);
         await incomeData.save();
 
@@ -24,10 +33,30 @@ export const addIncome = async (params: AddIncomeIntfc) => {
     }
 }
 
-export const getIncome = async (params: GetIncomeIntfc) => {
+export const updateIncome = async (params: UpdateIncomeIntfc, token: string) => {
     try {
+        const uniqueKey = decodingToken(token);
+        const user = await findUserByUniqueKey(String(uniqueKey));
+
+        if (!user) return NotFound('User not found');
+
+        await Income.findOneAndUpdate({ _id: params.incomeId }, params);
+        return ApiSuccess("Success");
+    } catch (error) {
+        console.error(error)
+        return InternalServerError();
+    }
+}
+
+export const getIncome = async (params: GetIncomeIntfc, token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
         const incomeData = await Income
-            .find({ month: params.month.toLowerCase(), year: params.year })
+            .find({ month: params.month.toLowerCase(), year: params.year, userId: user._id })
             .select('number name actual budget');
         const totalIncome = incomeData.reduce((acc, item) => (acc + item.actual), 0);
         const budgetTreshold = incomeData.reduce((acc, item) => (acc + item.budget), 0);
@@ -36,6 +65,42 @@ export const getIncome = async (params: GetIncomeIntfc) => {
             budgetTreshold,
             details: incomeData
         };
+
+        return ApiSuccess("Success", result);
+    } catch (error) {
+        console.error(error)
+        return InternalServerError();
+    }
+}
+
+export const getAllIncome = async (token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
+        const income = await Income.aggregate([
+            { $match: { userId: user._id } },
+            {
+                $group: {
+                    _id: { month: "$month", year: "$year" },
+                    month: { $first: "$month" },
+                    year: { $first: "$year" },
+                    createdAt: { $first: "$createdAt" },
+                    count: { $sum: 1 },
+                    income: { $sum: "$actual" },
+                    budget: { $sum: "$budget" }
+                }
+            },
+            { $project: { _id: 0 } },
+            { $sort: { createdAt: -1 } }
+        ]);
+
+        const result = income.map(item => {
+            const { createdAt, ...rest } = item
+            return rest
+        })
 
         return ApiSuccess("Success", result);
     } catch (error) {
