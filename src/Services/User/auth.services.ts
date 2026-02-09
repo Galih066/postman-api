@@ -1,5 +1,11 @@
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
+import { randomBytes } from "crypto";
 import User from "../../Models/user.model.js";
+import Profile from "../../Models/profile.model.js";
+import Income from "../../Models/income.model.js";
+import Frequence from "../../Models/frequence.model.js";
+import Type from "../../Models/type.model.js";
 import { LoginIntfc, AddProfileIntfc } from "../../Interfaces/user.interface.js";
 import {
     InternalServerError,
@@ -11,10 +17,9 @@ import {
     decodingToken,
     capitalize
 } from "../../Helpers/string.helper.js";
-import Profile from "../../Models/profile.model.js";
-import { randomBytes } from "crypto";
+import moment from "moment";
+
 const LENGTH_ROUND: number = 12;
-const { SECRET_KEY } = process.env;
 
 export const handleLogin = async (params: LoginIntfc) => {
     try {
@@ -33,23 +38,110 @@ export const handleLogin = async (params: LoginIntfc) => {
 }
 
 export const handleRegister = async (params: LoginIntfc) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
         const userExist = await User.findOne({ email: params.email });
         if (userExist) return BadRequest('User with this email already exist');
 
         const hashedPwd = await bcrypt.hash(params.password, LENGTH_ROUND);
-        const randomByt: string = randomBytes(32).toString('hex')
-        const savedData = new User({
+        const randomByt: string = randomBytes(32).toString('hex');
+        const registerData = new User({
             email: params.email,
             password: hashedPwd,
             uniqueKey: randomByt,
         });
 
-        await savedData.save();
+        await registerData.save({ session });
 
+        const newUserId = registerData._id;
+        const incomeData = new Income({
+            userId: newUserId,
+            name: "Sallary",
+            month: moment().format('MMMM').toLowerCase(),
+            year: moment().format('YYYY'),
+            actual: 0,
+            budget: 5000000
+        });
+
+        await incomeData.save({ session });
+
+        const freqData = [
+            {
+                userId: newUserId,
+                code: "FREQ-001",
+                name: "Daily",
+                number: 1
+            },
+            {
+                userId: newUserId,
+                code: "FREQ-003",
+                name: "Weekly",
+                number: 2
+            },
+            {
+                userId: newUserId,
+                code: "FREQ-002",
+                name: "Monthly",
+                number: 3
+            }
+        ];
+
+        await Frequence.insertMany(freqData, { session })
+
+        const typeData = [
+            {
+                userId: newUserId,
+                code: "TYPE-000",
+                name: "Food & Drinks",
+                number: 0,
+                description: "Lorem ipusm dolor sit amet"
+            },
+            {
+                userId: newUserId,
+                code: "TYPE-001",
+                name: "Housing & Rents",
+                number: 1,
+                description: "Lorem ipusm dolor sit amet"
+            },
+            {
+                userId: newUserId,
+                code: "TYPE-002",
+                name: "Traveling",
+                number: 2,
+                description: "Lorem ipusm dolor sit amet"
+            },
+            {
+                userId: newUserId,
+                code: "TYPE-003",
+                name: "Gift & Donation",
+                number: 3,
+                description: "Lorem ipusm dolor sit amet"
+            },
+            {
+                userId: newUserId,
+                code: "TYPE-004",
+                name: "Utilities",
+                number: 4,
+                description: "Lorem ipusm dolor sit amet"
+            },
+            {
+                userId: newUserId,
+                code: "TYPE-005",
+                name: "Shopping",
+                number: 5,
+                description: "Lorem ipusm dolor sit amet"
+            }
+        ];
+
+        await Type.insertMany(typeData, { session })
+
+        await session.commitTransaction();
         return ApiSuccess("Success");
     } catch (error) {
         console.log(error);
+        await session.abortTransaction();
         return InternalServerError();
     }
 }
