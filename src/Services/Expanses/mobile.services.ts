@@ -17,7 +17,7 @@ export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: str
 
         const start = moment(params.start).startOf('days').format('YYYY-MM-DD HH:mm:ss');
         const end = moment(params.end).endOf('days').format('YYYY-MM-DD HH:mm:ss');
-        const rawMonthRange = getMonthBetweenDateRange(start, end).sort((a, b) => {
+        const rawMonthRange = getMonthBetweenDateRange(start, end, params.tz || moment.tz.guess()).sort((a, b) => {
             if (a.year !== b.year) return a.year - b.year;
             return a.order - b.order;
         });
