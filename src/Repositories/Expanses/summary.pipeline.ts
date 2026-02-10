@@ -10,16 +10,38 @@ export const expansesSummaryAggr = (startDate: string, endDate: string, timeZone
     {
         $lookup: {
             from: "types",
-            localField: "type",
-            foreignField: "code",
+            let: { typeCode: "$type", uid: "$userId" },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: {
+                            $and: [
+                                { $eq: ["$code", "$$typeCode"] },
+                                { $eq: ["$userId", "$$uid"] }
+                            ]
+                        }
+                    }
+                }
+            ],
             as: "typeName"
         }
     },
     {
         $lookup: {
             from: "frequences",
-            localField: "frequence",
-            foreignField: "code",
+            let: { freqCode: "$frequence", uid: "$userId" },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: {
+                            $and: [
+                                { $eq: ["$code", "$$freqCode"] },
+                                { $eq: ["$userId", "$$uid"] }
+                            ]
+                        }
+                    }
+                }
+            ],
             as: "freqName"
         }
     },

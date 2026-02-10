@@ -98,8 +98,19 @@ export const getNonDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc, 
             {
                 $lookup: {
                     from: "types",
-                    localField: "type",
-                    foreignField: "code",
+                    let: { typeCode: "$type", uid: "$userId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$code", "$$typeCode"] },
+                                        { $eq: ["$userId", "$$uid"] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
                     as: "typeName"
                 }
             },
@@ -135,7 +146,7 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc, t
         const timeZone: string = tz || moment.tz.guess()
         const startDate: string = moment.tz(start, timeZone).startOf("days").utc().toISOString()
         const endDate: string = moment.tz(end, timeZone).endOf("days").utc().toISOString()
-        const monthList = getMonthBetweenDateRange(startDate, endDate)
+        const monthList = getMonthBetweenDateRange(startDate, endDate, timeZone)
         const monthArr = monthList.map(item => item.month)
         const yearArr = monthList.map(item => item.year)
         const budget: { _id: any, totalBudget: number }[] = await Income.aggregate([

@@ -12,9 +12,9 @@ export const dateRangeGenerator = (start: string, end: string, timezone: string)
     return arrDateRange;
 }
 
-export const getMonthBetweenDateRange = (startDate: string, endDate: string) => {
-    const start = moment(startDate).startOf('month');
-    const end = moment(endDate).startOf('month');
+export const getMonthBetweenDateRange = (startDate: string, endDate: string, timeZone: string) => {
+    const start = moment(startDate).tz(timeZone).startOf('month');
+    const end = moment(endDate).tz(timeZone).startOf('month');
     const current = start.clone();
     const result = [];
 
