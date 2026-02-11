@@ -172,9 +172,8 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc, t
             DailyExpanse.aggregate(expansesSummaryAggr(dateRange.start, dateRange.end, timeZone, user._id))
         ])
 
-        if (!rawData.length) return ApiSuccess("Success", []);
-
         const sumNominal = rawData.reduce((acc, item) => acc + item.totalNominal, 0);
+        const sumOveral = overalRaw.reduce((acc, item) => acc + item.totalNominal, 0);
         const sumCount = rawData.reduce((acc, item) => acc + item.count, 0);
         const dayCount = moment(end).diff(moment(start), 'days') + 1;
         const groupType = rawData.reduce((acc, item) => {
@@ -184,6 +183,23 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc, t
 
             return acc;
         }, {} as Record<string, { type: string, total: number }>);
+        const rawType = Object.values(groupType).sort((a, b) => b.total - a.total);
+
+        if (!rawData.length) {
+            const tempResult = {
+                total: sumNominal,
+                overalExpanses: sumOveral,
+                overalBudget: budget[0]?.totalBudget ?? 0,
+                avgTransaction: (sumNominal && sumCount) ? +(sumNominal / sumCount).toFixed(2) : 0,
+                avgPerDays: +(sumNominal / dayCount).toFixed(2),
+                mostSpendType: rawType.length ? rawType[0].type : "No data",
+                dailyAvg: [],
+                typeSpend: [],
+            }
+
+            return ApiSuccess("Success", tempResult);
+        }
+
         const groupDaily = rawData.reduce((acc, item) => {
             const key = item.date;
             if (!acc[key]) acc[key] = { date: item.date, total: 0, count: 0, avg: 0 };
@@ -193,9 +209,7 @@ export const getSummaryExpanses = async ({ start, end, tz }: GetDailyExpIntfc, t
 
             return acc
         }, {} as Record<string, { date: string, total: number, count: number, avg: number }>);
-        const sumOveral = overalRaw.reduce((acc, item) => acc + item.totalNominal, 0)
         const rawDaily = Object.values(groupDaily).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        const rawType = Object.values(groupType).sort((a, b) => b.total - a.total);
         const result = {
             total: sumNominal,
             overalExpanses: sumOveral,
@@ -362,14 +376,15 @@ export const getMonthlySummary = async (params: any, token: string) => {
         const expanses = await DailyExpanse.aggregate(monthlySummaryAggr(timeZone, user._id));
         const mappingExpanses = expanses.map(item => ({ ...item, monthName: DEFMONTH[item.month].toLowerCase() }));
         const result: any = [];
-        const mapIncome = new Map(incomeYear.map(item => [`${item.year}-${item.month}`, item.budget]));
+        const mapIncome = new Map(incomeYear.map(item => [`${item.year}-${item.month}`, { budget: item.budget, income: item.income }]));
 
         mappingExpanses.forEach(item => {
             const key = `${item.year}-${item.monthName}`;
             result.push({
                 ...item,
                 monthName: capitalize(item.monthName),
-                budget: mapIncome.get(key)
+                budget: mapIncome.get(key)?.budget,
+                income: mapIncome.get(key)?.income
             });
         });
 
