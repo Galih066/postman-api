@@ -91,7 +91,7 @@ export const getNonDailyExpanses = async ({ start, end, tz }: GetDailyExpIntfc, 
             {
                 $match: {
                     date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-                    frequence: { $nin: ["FREQ-000", "FREQ-001"] },
+                    frequence: { $nin: ["FREQ-001"] },
                     userId: user._id
                 }
             },

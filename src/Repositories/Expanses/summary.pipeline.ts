@@ -96,7 +96,7 @@ export const dailyChartAggr = (startDate: string, endDate: string, timeZone: str
                 $gte: new Date(startDate),
                 $lte: new Date(endDate),
             },
-            frequence: { $in: ["FREQ-000", "FREQ-001"] },
+            frequence: { $in: ["FREQ-001"] },
             userId
         }
     },
