@@ -51,3 +51,9 @@ export const expansesList = Joi.object({
     page: Joi.string().required(),
     limit: Joi.string().required()
 });
+
+export const mobileDashboard = Joi.object({
+    month: Joi.string().required(),
+    year: Joi.string().required(),
+    tz: Joi.string().optional().allow(''),
+});
