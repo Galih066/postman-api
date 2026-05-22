@@ -194,3 +194,76 @@ export const handleDashboard = async ({ month, year, tz }: GetIncomeIntfc, token
         return InternalServerError()
     }
 }
+
+export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
+        const timeZone = tz || moment.tz.guess()
+        const monthStart = moment.tz(timeZone).month(month).year(+year).startOf('month').utc().toISOString()
+        const monthEnd = moment.tz(timeZone).month(month).year(+year).endOf('month').utc().toISOString()
+
+        const rawData = await DailyExpanse.aggregate([
+            { $match: { userId: user._id, date: { $gte: new Date(monthStart), $lte: new Date(monthEnd) } } },
+            {
+                $lookup: {
+                    from: 'types',
+                    let: { typeCode: '$type', uid: '$userId' },
+                    pipeline: [
+                        { $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
+                    ],
+                    as: 'typeName'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'frequences',
+                    let: { freqCode: '$frequence', uid: '$userId' },
+                    pipeline: [
+                        { $match: { $expr: { $and: [{ $eq: ['$code', '$$freqCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
+                    ],
+                    as: 'freqName'
+                }
+            },
+            { $unwind: '$typeName' },
+            { $unwind: '$freqName' },
+            {
+                $addFields: {
+                    dateOnly: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: timeZone } }
+                }
+            },
+            {
+                $group: {
+                    _id: '$dateOnly',
+                    date: { $first: '$dateOnly' },
+                    total: { $sum: '$nominal' },
+                    count: { $sum: 1 },
+                    transactions: {
+                        $push: {
+                            name: '$name',
+                            description: '$description',
+                            nominal: '$nominal',
+                            type: '$typeName.name',
+                            freq: '$freqName.name',
+                        }
+                    }
+                }
+            },
+            { $sort: { date: -1 } },
+            { $project: { _id: 0 } }
+        ])
+
+        const result = rawData.map(item => ({
+            ...item,
+            day: moment(item.date).format('dddd'),
+        }))
+
+        return ApiSuccess('Success', result)
+    } catch (error) {
+        console.error(error)
+        return InternalServerError()
+    }
+}

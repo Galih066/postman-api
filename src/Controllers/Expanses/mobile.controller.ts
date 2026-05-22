@@ -17,3 +17,11 @@ export const dashboard = async (request: Request, response: Response) => {
     const result = await MobileService.handleDashboard(reqData, token)
     response.status(result.statusCode).json(result)
 }
+
+export const transactions = async (request: Request, response: Response) => {
+    const reqHeader = request.headers.authorization;
+    const token = reqHeader?.split(' ')[1] as string
+    const reqData = request.query as unknown as GetIncomeIntfc
+    const result = await MobileService.handleTransactions(reqData, token)
+    response.status(result.statusCode).json(result)
+}
