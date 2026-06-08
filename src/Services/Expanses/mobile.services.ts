@@ -504,3 +504,56 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
         return InternalServerError()
     }
 }
+
+export const handleIncomeList = async (token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
+        const MONTH_ORDER: Record<string, number> = {
+            january: 1, february: 2, march: 3, april: 4,
+            may: 5, june: 6, july: 7, august: 8,
+            september: 9, october: 10, november: 11, december: 12
+        }
+
+        const raw = await Income.aggregate([
+            { $match: { userId: user._id } },
+            {
+                $group: {
+                    _id: { month: '$month', year: '$year' },
+                    month: { $first: '$month' },
+                    year: { $first: '$year' },
+                    totalActual: { $sum: '$actual' },
+                    totalBudget: { $sum: '$budget' },
+                    count: { $sum: 1 },
+                    details: {
+                        $push: {
+                            id: '$_id',
+                            name: '$name',
+                            actual: '$actual',
+                            budget: '$budget'
+                        }
+                    }
+                }
+            },
+            { $project: { _id: 0 } }
+        ])
+
+        const result = raw
+            .sort((a, b) => {
+                if (b.year !== a.year) return +b.year - +a.year
+                return (MONTH_ORDER[b.month] ?? 0) - (MONTH_ORDER[a.month] ?? 0)
+            })
+            .map(item => ({
+                ...item,
+                savings: item.totalActual - item.totalBudget
+            }))
+
+        return ApiSuccess('Success', result)
+    } catch (error) {
+        console.error(error)
+        return InternalServerError()
+    }
+}
