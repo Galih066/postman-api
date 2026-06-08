@@ -288,7 +288,7 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
             4: `${mth.clone().date(22).format('MMM D')} - ${mth.clone().date(daysInMonth).format('D')}`,
         }
 
-        const [rawExpenses, incomeData, topTx] = await Promise.all([
+        const [rawExpenses, incomeData, topTx, txByCategory] = await Promise.all([
             DailyExpanse.aggregate(expansesSummaryAggr(monthStart, monthEnd, timeZone, user._id)),
             Income.find({ month: month.toLowerCase(), year, userId: user._id }),
             DailyExpanse.aggregate([
@@ -312,6 +312,38 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
                     }
                 },
                 { $project: { _id: 0, name: 1, nominal: 1, type: '$typeName.name', date: '$dateOnly' } }
+            ]),
+            DailyExpanse.aggregate([
+                { $match: { userId: user._id, date: { $gte: new Date(monthStart), $lte: new Date(monthEnd) } } },
+                {
+                    $lookup: {
+                        from: 'types',
+                        let: { typeCode: '$type', uid: '$userId' },
+                        pipeline: [
+                            { $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
+                        ],
+                        as: 'typeName'
+                    }
+                },
+                { $unwind: '$typeName' },
+                {
+                    $addFields: {
+                        dateOnly: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: timeZone } }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$type',
+                        type: { $first: '$typeName.name' },
+                        total: { $sum: '$nominal' },
+                        count: { $sum: 1 },
+                        transactions: {
+                            $push: { name: '$name', nominal: '$nominal', date: '$dateOnly' }
+                        }
+                    }
+                },
+                { $sort: { total: -1 } },
+                { $project: { _id: 0 } }
             ])
         ])
 
@@ -365,6 +397,16 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
             day: moment(item.date).format('dddd')
         }))
 
+        const transactionsByCategory = txByCategory.map((item: any) => ({
+            type: item.type,
+            total: item.total,
+            count: item.count,
+            percent: totalExpenses > 0 ? +((item.total / totalExpenses) * 100).toFixed(2) : 0,
+            transactions: item.transactions
+                .sort((a: any, b: any) => b.nominal - a.nominal)
+                .map((tx: any) => ({ ...tx, day: moment(tx.date).format('dddd') }))
+        }))
+
         const result = {
             overview: {
                 income: totalIncome,
@@ -380,7 +422,8 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
             byCategory,
             byFrequency,
             weeklyBreakdown,
-            topTransactions
+            topTransactions,
+            transactionsByCategory
         }
 
         return ApiSuccess('Success', result)
