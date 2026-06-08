@@ -100,6 +100,12 @@ export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: str
     }
 }
 
+const resolveIncomeStatus = (data: { actual: number }[]) => {
+    if (data.length === 0) return { isSet: false, isUpdated: false, message: 'Income has not been set for this month' }
+    if (data.every(item => item.actual === 0)) return { isSet: true, isUpdated: false, message: 'Income record exists but actual amount has not been updated' }
+    return { isSet: true, isUpdated: true, message: 'Income has been set for this month' }
+}
+
 export const handleDashboard = async (token: string) => {
     try {
         const uniqueKey = decodingToken(token)
@@ -173,10 +179,7 @@ export const handleDashboard = async (token: string) => {
         const weeklyTrend = weekDates.map(date => ({ date, total: weeklyMap.get(date) ?? 0 }))
 
         const result = {
-            incomeStatus: {
-                isSet: incomeData.length > 0,
-                message: incomeData.length > 0 ? 'Income has been set for this month' : 'Income has not been set for this month'
-            },
+            incomeStatus: resolveIncomeStatus(incomeData),
             month: {
                 income: totalIncome,
                 budget: totalBudget,
@@ -414,6 +417,7 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
         }))
 
         const result = {
+            incomeStatus: resolveIncomeStatus(incomeData),
             overview: {
                 income: totalIncome,
                 budget: totalBudget,
