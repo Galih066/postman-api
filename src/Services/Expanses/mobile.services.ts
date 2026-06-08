@@ -100,16 +100,18 @@ export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: str
     }
 }
 
-export const handleDashboard = async ({ month, year, tz }: GetIncomeIntfc, token: string) => {
+export const handleDashboard = async (token: string) => {
     try {
         const uniqueKey = decodingToken(token)
         const user = await findUserByUniqueKey(String(uniqueKey))
 
         if (!user) return NotFound('User not found')
 
-        const timeZone = tz || moment.tz.guess()
-        const monthStart = moment.tz(timeZone).month(month).year(+year).startOf('month').utc().toISOString()
-        const monthEnd = moment.tz(timeZone).month(month).year(+year).endOf('month').utc().toISOString()
+        const timeZone = moment.tz.guess()
+        const month = moment().format('MMMM')
+        const year = moment().format('YYYY')
+        const monthStart = moment.tz(timeZone).startOf('month').utc().toISOString()
+        const monthEnd = moment.tz(timeZone).endOf('month').utc().toISOString()
         const todayStart = moment.tz(timeZone).startOf('day').utc().toISOString()
         const todayEnd = moment.tz(timeZone).endOf('day').utc().toISOString()
         const weekStart = moment.tz(timeZone).subtract(6, 'days').startOf('day').utc().toISOString()
@@ -171,6 +173,10 @@ export const handleDashboard = async ({ month, year, tz }: GetIncomeIntfc, token
         const weeklyTrend = weekDates.map(date => ({ date, total: weeklyMap.get(date) ?? 0 }))
 
         const result = {
+            incomeStatus: {
+                isSet: incomeData.length > 0,
+                message: incomeData.length > 0 ? 'Income has been set for this month' : 'Income has not been set for this month'
+            },
             month: {
                 income: totalIncome,
                 budget: totalBudget,
