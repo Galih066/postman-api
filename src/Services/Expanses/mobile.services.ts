@@ -313,6 +313,7 @@ export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, to
                     count: { $sum: 1 },
                     transactions: {
                         $push: {
+                            id: '$_id',
                             name: '$name',
                             description: '$description',
                             nominal: '$nominal',
