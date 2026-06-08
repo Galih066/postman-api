@@ -7,7 +7,7 @@ import * as MobileController from "../Controllers/Expanses/mobile.controller.js"
 const router = Router();
 
 router.get('/date-range', [tokenValidation, validation(dailyExpanses, 'query')], MobileController.dateRangeExpanses)
-router.get('/dashboard', [tokenValidation, validation(mobileDashboard, 'query')], MobileController.dashboard)
+router.get('/dashboard', [tokenValidation], MobileController.dashboard)
 router.get('/transactions', [tokenValidation, validation(mobileDashboard, 'query')], MobileController.transactions)
 router.get('/monthly-report', [tokenValidation, validation(mobileDashboard, 'query')], MobileController.monthlyReport)
 

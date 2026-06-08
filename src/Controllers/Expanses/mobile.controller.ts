@@ -13,8 +13,7 @@ export const dateRangeExpanses = async (request: Request, response: Response) =>
 export const dashboard = async (request: Request, response: Response) => {
     const reqHeader = request.headers.authorization;
     const token = reqHeader?.split(' ')[1] as string
-    const reqData = request.query as unknown as GetIncomeIntfc
-    const result = await MobileService.handleDashboard(reqData, token)
+    const result = await MobileService.handleDashboard(token)
     response.status(result.statusCode).json(result)
 }
 
