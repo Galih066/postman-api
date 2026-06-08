@@ -1,4 +1,5 @@
 import moment from "moment-timezone";
+import mongoose from "mongoose";
 import { ApiSuccess, InternalServerError, NotFound } from "../../Helpers/response.helper.js"
 import { GetDailyExpIntfc, GetIncomeIntfc } from "../../Interfaces/expanses.interface.js";
 import { getMonthBetweenDateRange, dateRangeGenerator } from "../../Helpers/date.helper.js";
@@ -97,6 +98,66 @@ export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: str
     } catch (error) {
         console.error(error);
         return InternalServerError();
+    }
+}
+
+export const handleExpanseDetail = async (id: string, token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
+        const data = await DailyExpanse.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(id), userId: user._id } },
+            {
+                $lookup: {
+                    from: 'types',
+                    let: { typeCode: '$type', uid: '$userId' },
+                    pipeline: [
+                        { $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
+                    ],
+                    as: 'typeName'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'frequences',
+                    let: { freqCode: '$frequence', uid: '$userId' },
+                    pipeline: [
+                        { $match: { $expr: { $and: [{ $eq: ['$code', '$$freqCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
+                    ],
+                    as: 'freqName'
+                }
+            },
+            { $unwind: '$typeName' },
+            { $unwind: '$freqName' },
+            {
+                $project: {
+                    _id: 0,
+                    name: 1,
+                    description: 1,
+                    nominal: 1,
+                    type: '$typeName.name',
+                    typeCode: '$type',
+                    freq: '$freqName.name',
+                    freqCode: '$frequence',
+                    date: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+                    day: { $dayOfWeek: '$date' }
+                }
+            }
+        ])
+
+        if (!data.length) return NotFound('Expense not found')
+
+        const item = data[0]
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        const result = { ...item, day: dayNames[item.day - 1] }
+
+        return ApiSuccess('Success', result)
+    } catch (error) {
+        console.error(error)
+        return InternalServerError()
     }
 }
 

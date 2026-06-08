@@ -57,3 +57,7 @@ export const mobileDashboard = Joi.object({
     year: Joi.string().required(),
     tz: Joi.string().optional().allow(''),
 });
+
+export const expanseDetail = Joi.object({
+    id: Joi.string().required(),
+});
