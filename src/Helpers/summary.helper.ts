@@ -24,6 +24,12 @@ export const sumByFrequence = (rawData: RawResultQuery[]) => {
     return Object.values(freqResult);
 }
 
+export const resolveIncomeStatus = (data: { actual: number }[]) => {
+    if (data.length === 0) return { isSet: false, isUpdated: false, message: 'Income has not been set for this month' }
+    if (data.every(item => item.actual === 0)) return { isSet: true, isUpdated: false, message: 'Income record exists but actual amount has not been updated' }
+    return { isSet: true, isUpdated: true, message: 'Income has been set for this month' }
+}
+
 export const getPercentageChange = (current: number, previous: number) => {
     if (previous === 0) {
         if (current === 0) return { direction: 'no change', percentage: 0 };

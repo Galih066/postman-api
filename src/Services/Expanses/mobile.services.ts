@@ -9,6 +9,7 @@ import { DEFDATEFORMAT } from "../../utils/constants.js";
 import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import { expansesSummaryAggr } from "../../Repositories/Expanses/summary.pipeline.js";
+import { resolveIncomeStatus } from "../../Helpers/summary.helper.js";
 
 export const handleDeleteExpanse = async (id: string, token: string) => {
     try {
@@ -195,12 +196,6 @@ export const handleExpanseDetail = async (id: string, token: string) => {
         console.error(error)
         return InternalServerError()
     }
-}
-
-const resolveIncomeStatus = (data: { actual: number }[]) => {
-    if (data.length === 0) return { isSet: false, isUpdated: false, message: 'Income has not been set for this month' }
-    if (data.every(item => item.actual === 0)) return { isSet: true, isUpdated: false, message: 'Income record exists but actual amount has not been updated' }
-    return { isSet: true, isUpdated: true, message: 'Income has been set for this month' }
 }
 
 export const handleDashboard = async (token: string) => {
