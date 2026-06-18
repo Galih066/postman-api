@@ -61,3 +61,13 @@ export const mobileDashboard = Joi.object({
 export const expanseDetail = Joi.object({
     id: Joi.string().required(),
 });
+
+export const updExpanse = Joi.object({
+    id: Joi.string().required(),
+    name: Joi.string().required(),
+    description: Joi.string().required(),
+    nominal: Joi.number().required(),
+    type: Joi.string().required(),
+    frequence: Joi.string().required(),
+    date: Joi.string().required(),
+});

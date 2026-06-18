@@ -56,3 +56,10 @@ export const addIncome = async (request: Request, response: Response) => {
     const result = await IncomeService.addIncome(reqData, token)
     response.status(result.statusCode).json(result)
 }
+
+export const updateExpanse = async (request: Request, response: Response) => {
+    const reqHeader = request.headers.authorization;
+    const token = reqHeader?.split(' ')[1] as string
+    const result = await MobileService.handleUpdateExpanse(request.body, token)
+    response.status(result.statusCode).json(result)
+}
