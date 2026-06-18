@@ -47,10 +47,6 @@ export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: str
         });
         const month = [...new Set(rawMonthRange.map(item => item.month.toLowerCase()))];
         const year = [...new Set(rawMonthRange.map(item => +item.year))];
-        const firstData = rawMonthRange[0]
-        const lastData = rawMonthRange[rawMonthRange.length - 1]
-        const stMonthly = moment().month(firstData.order - 1).year(firstData.year).startOf('months').startOf('days').format(DEFDATEFORMAT)
-        const endMonthly = moment().month(lastData.order - 1).year(lastData.year).endOf('months').endOf('days').format(DEFDATEFORMAT)
         const expanses = await DailyExpanse.aggregate([
             { $match: { createdAt: { $gte: new Date(start), $lte: new Date(end) } } },
             {
