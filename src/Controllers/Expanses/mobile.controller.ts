@@ -63,3 +63,11 @@ export const updateExpanse = async (request: Request, response: Response) => {
     const result = await MobileService.handleUpdateExpanse(request.body, token)
     response.status(result.statusCode).json(result)
 }
+
+export const deleteExpanse = async (request: Request, response: Response) => {
+    const reqHeader = request.headers.authorization;
+    const token = reqHeader?.split(' ')[1] as string
+    const { id } = request.query as { id: string }
+    const result = await MobileService.handleDeleteExpanse(id, token)
+    response.status(result.statusCode).json(result)
+}

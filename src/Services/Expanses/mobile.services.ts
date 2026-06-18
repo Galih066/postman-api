@@ -10,6 +10,24 @@ import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import { expansesSummaryAggr } from "../../Repositories/Expanses/summary.pipeline.js";
 
+export const handleDeleteExpanse = async (id: string, token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+
+        if (!user) return NotFound('User not found')
+
+        const deleted = await DailyExpanse.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id), userId: user._id })
+
+        if (!deleted) return NotFound('Expense not found')
+
+        return ApiSuccess('Success')
+    } catch (error) {
+        console.error(error)
+        return InternalServerError()
+    }
+}
+
 export const handleUpdateExpanse = async (params: { id: string; name: string; description: string; nominal: number; type: string; frequence: string; date: string }, token: string) => {
     try {
         const uniqueKey = decodingToken(token)
