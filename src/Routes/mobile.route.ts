@@ -15,5 +15,6 @@ router.get('/income-list', [tokenValidation], MobileController.incomeList)
 router.post('/add-income', [tokenValidation, validation(addInc, 'body')], MobileController.addIncome)
 router.put('/update-expanse', [tokenValidation, validation(updExpanse, 'body')], MobileController.updateExpanse)
 router.delete('/expanse', [tokenValidation, validation(expanseDetail, 'query')], MobileController.deleteExpanse)
+router.get('/analysis', [tokenValidation], MobileController.analysis)
 
 export default router

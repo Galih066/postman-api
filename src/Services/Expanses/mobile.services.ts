@@ -9,7 +9,7 @@ import { DEFDATEFORMAT } from "../../utils/constants.js";
 import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import { expansesSummaryAggr } from "../../Repositories/Expanses/summary.pipeline.js";
-import { resolveIncomeStatus } from "../../Helpers/summary.helper.js";
+import { resolveIncomeStatus, getPercentageChange } from "../../Helpers/summary.helper.js";
 
 export const handleDeleteExpanse = async (id: string, token: string) => {
     try {
@@ -583,6 +583,152 @@ export const handleIncomeList = async (token: string) => {
             }))
 
         return ApiSuccess('Success', result)
+    } catch (error) {
+        console.error(error)
+        return InternalServerError()
+    }
+}
+
+export const handleAnalysis = async (token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+        if (!user) return NotFound('User not found')
+
+        const currMoment = moment()
+        const prevMoment = moment().subtract(1, 'month')
+        const currMonthEnd = currMoment.clone().endOf('month').utc().toISOString()
+        const prevMonthStart = prevMoment.clone().startOf('month').utc().toISOString()
+
+        const currentMonth = currMoment.format('MMMM').toLowerCase()
+        const currentYear = currMoment.format('YYYY')
+        const prevMonth = prevMoment.format('MMMM').toLowerCase()
+        const prevYear = prevMoment.format('YYYY')
+
+        const MONTH_NAMES = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+
+        const [monthlyExpenses, categoryTotals, monthlyIncome, compExpenses, compIncome] = await Promise.all([
+            DailyExpanse.aggregate([
+                { $match: { userId: user._id } },
+                {
+                    $group: {
+                        _id: { monthNum: { $month: '$date' }, year: { $year: '$date' } },
+                        totalExpenses: { $sum: '$nominal' },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $project: { monthNum: '$_id.monthNum', year: '$_id.year', totalExpenses: 1, count: 1, _id: 0 } },
+                { $sort: { year: 1, monthNum: 1 } }
+            ]),
+            DailyExpanse.aggregate([
+                { $match: { userId: user._id } },
+                {
+                    $lookup: {
+                        from: 'types',
+                        let: { typeCode: '$type', uid: '$userId' },
+                        pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }],
+                        as: 'typeName'
+                    }
+                },
+                { $unwind: '$typeName' },
+                { $group: { _id: '$type', type: { $first: '$typeName.name' }, total: { $sum: '$nominal' }, count: { $sum: 1 } } },
+                { $sort: { total: -1 } },
+                { $project: { _id: 0 } }
+            ]),
+            Income.aggregate([
+                { $match: { userId: user._id } },
+                {
+                    $group: {
+                        _id: { month: '$month', year: '$year' },
+                        totalIncome: { $sum: '$actual' },
+                        totalBudget: { $sum: '$budget' }
+                    }
+                },
+                { $project: { month: '$_id.month', year: '$_id.year', totalIncome: 1, totalBudget: 1, _id: 0 } }
+            ]),
+            DailyExpanse.aggregate([
+                { $match: { userId: user._id, date: { $gte: new Date(prevMonthStart), $lte: new Date(currMonthEnd) } } },
+                {
+                    $group: {
+                        _id: { month: { $month: '$date' }, year: { $year: '$date' } },
+                        totalExpenses: { $sum: '$nominal' }
+                    }
+                },
+                { $project: { month: '$_id.month', year: '$_id.year', totalExpenses: 1, _id: 0 } }
+            ]),
+            Income.find({
+                userId: user._id,
+                $or: [
+                    { month: currentMonth, year: currentYear },
+                    { month: prevMonth, year: prevYear }
+                ]
+            })
+        ])
+
+        const incomeMap = monthlyIncome.reduce<Record<string, { totalIncome: number; totalBudget: number }>>((acc, item) => {
+            acc[`${item.year}-${item.month}`] = { totalIncome: item.totalIncome, totalBudget: item.totalBudget }
+            return acc
+        }, {})
+
+        const allKeys = new Set([
+            ...monthlyExpenses.map((e: { monthNum: number; year: number }) => `${e.year}-${e.monthNum}`),
+            ...monthlyIncome.map((i: { month: string; year: string }) => `${i.year}-${MONTH_NAMES.indexOf(i.month) + 1}`)
+        ])
+
+        const monthlyTrend = Array.from(allKeys)
+            .map(key => {
+                const [yr, mn] = key.split('-')
+                const monthNum = +mn
+                const year = yr
+                const monthName = MONTH_NAMES[monthNum - 1]
+                const exp = monthlyExpenses.find((e: { monthNum: number; year: number }) => e.monthNum === monthNum && e.year === +year) || { totalExpenses: 0 }
+                const inc = incomeMap[`${year}-${monthName}`] || { totalIncome: 0, totalBudget: 0 }
+                const savings = inc.totalIncome - exp.totalExpenses
+                const savingsRate = inc.totalIncome > 0 ? +((savings / inc.totalIncome) * 100).toFixed(2) : 0
+                return { month: monthName, year, totalExpenses: exp.totalExpenses, totalIncome: inc.totalIncome, totalBudget: inc.totalBudget, savings, savingsRate }
+            })
+            .sort((a, b) => +a.year !== +b.year ? +a.year - +b.year : MONTH_NAMES.indexOf(a.month) - MONTH_NAMES.indexOf(b.month))
+
+        const totalExpenses = monthlyTrend.reduce((acc, m) => acc + m.totalExpenses, 0)
+        const totalIncome = monthlyTrend.reduce((acc, m) => acc + m.totalIncome, 0)
+        const monthsWithExp = monthlyTrend.filter(m => m.totalExpenses > 0)
+        const monthsWithInc = monthlyTrend.filter(m => m.totalIncome > 0)
+        const highestSpend = monthsWithExp.length > 0 ? monthsWithExp.reduce((max, m) => m.totalExpenses > max.totalExpenses ? m : max) : null
+        const lowestSpend = monthsWithExp.length > 0 ? monthsWithExp.reduce((min, m) => m.totalExpenses < min.totalExpenses ? m : min) : null
+
+        const totalCatExp = categoryTotals.reduce((acc: number, c: { total: number }) => acc + c.total, 0)
+        const topCategories = categoryTotals.map((c: { type: string; total: number; count: number }) => ({
+            ...c,
+            percent: totalCatExp > 0 ? +((c.total / totalCatExp) * 100).toFixed(2) : 0
+        }))
+
+        const currExpTotal = compExpenses.find((e: { month: number; year: number }) => e.month === +currMoment.format('M') && e.year === +currentYear)?.totalExpenses ?? 0
+        const prevExpTotal = compExpenses.find((e: { month: number; year: number }) => e.month === +prevMoment.format('M') && e.year === +prevYear)?.totalExpenses ?? 0
+        const currIncTotal = (compIncome as { month: string; year: string; actual: number }[]).filter(i => i.month === currentMonth && i.year === currentYear).reduce((acc, i) => acc + i.actual, 0)
+        const prevIncTotal = (compIncome as { month: string; year: string; actual: number }[]).filter(i => i.month === prevMonth && i.year === prevYear).reduce((acc, i) => acc + i.actual, 0)
+
+        return ApiSuccess('Success', {
+            monthlyTrend,
+            topCategories,
+            summary: {
+                totalExpenses,
+                totalIncome,
+                totalSavings: totalIncome - totalExpenses,
+                avgMonthlyExpenses: monthsWithExp.length > 0 ? Math.round(totalExpenses / monthsWithExp.length) : 0,
+                avgMonthlyIncome: monthsWithInc.length > 0 ? Math.round(totalIncome / monthsWithInc.length) : 0,
+                highestSpendMonth: highestSpend ? { month: highestSpend.month, year: highestSpend.year } : null,
+                lowestSpendMonth: lowestSpend ? { month: lowestSpend.month, year: lowestSpend.year } : null
+            },
+            monthComparison: {
+                current: { month: currentMonth, year: currentYear, totalExpenses: currExpTotal, totalIncome: currIncTotal, savings: currIncTotal - currExpTotal },
+                previous: { month: prevMonth, year: prevYear, totalExpenses: prevExpTotal, totalIncome: prevIncTotal, savings: prevIncTotal - prevExpTotal },
+                diff: {
+                    expenses: getPercentageChange(currExpTotal, prevExpTotal),
+                    income: getPercentageChange(currIncTotal, prevIncTotal),
+                    savings: getPercentageChange(currIncTotal - currExpTotal, prevIncTotal - prevExpTotal)
+                }
+            }
+        })
     } catch (error) {
         console.error(error)
         return InternalServerError()
