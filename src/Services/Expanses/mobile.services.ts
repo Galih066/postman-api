@@ -3,23 +3,30 @@ import mongoose from "mongoose";
 import { ApiSuccess, InternalServerError, NotFound } from "../../Helpers/response.helper.js"
 import { GetDailyExpIntfc, GetIncomeIntfc } from "../../Interfaces/expanses.interface.js";
 import { getMonthBetweenDateRange, dateRangeGenerator } from "../../Helpers/date.helper.js";
-import { decodingToken } from "../../Helpers/string.helper.js";
-import { findUserByUniqueKey } from "../../Helpers/data.helper.js";
+import { resolveUser } from "../../Helpers/data.helper.js";
 import { DEFDATEFORMAT } from "../../utils/constants.js";
 import DailyExpanse from "../../Models/daily.model.js";
 import Income from "../../Models/income.model.js";
 import { expansesSummaryAggr } from "../../Repositories/Expanses/summary.pipeline.js";
-import { resolveIncomeStatus, getPercentageChange } from "../../Helpers/summary.helper.js";
+import { resolveIncomeStatus, getPercentageChange, calcPercent } from "../../Helpers/summary.helper.js";
+
+const MONTH_NAMES = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+const MONTH_ORDER: Record<string, number> = {
+    january: 1, february: 2, march: 3, april: 4,
+    may: 5, june: 6, july: 7, august: 8,
+    september: 9, october: 10, november: 11, december: 12
+}
+
+type CategoryEntry = { type: string; total: number }
+type CategoryEntryWithCount = { type: string; total: number; count: number }
+type FreqEntry = { freq: string; total: number }
 
 export const handleDeleteExpanse = async (id: string, token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
-
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const deleted = await DailyExpanse.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id), userId: user._id })
-
         if (!deleted) return NotFound('Expense not found')
 
         return ApiSuccess('Success')
@@ -31,9 +38,7 @@ export const handleDeleteExpanse = async (id: string, token: string) => {
 
 export const handleUpdateExpanse = async (params: { id: string; name: string; description: string; nominal: number; type: string; frequence: string; date: string }, token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
-
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const updated = await DailyExpanse.findOneAndUpdate(
@@ -41,7 +46,6 @@ export const handleUpdateExpanse = async (params: { id: string; name: string; de
             { name: params.name, description: params.description, nominal: params.nominal, type: params.type, frequence: params.frequence, date: new Date(params.date) },
             { new: true }
         )
-
         if (!updated) return NotFound('Expense not found')
 
         return ApiSuccess('Success')
@@ -53,9 +57,7 @@ export const handleUpdateExpanse = async (params: { id: string; name: string; de
 
 export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
-
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const start = moment(params.start).startOf('days').format('YYYY-MM-DD HH:mm:ss');
@@ -66,72 +68,30 @@ export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: str
         });
         const month = [...new Set(rawMonthRange.map(item => item.month.toLowerCase()))];
         const year = [...new Set(rawMonthRange.map(item => +item.year))];
+
         const expanses = await DailyExpanse.aggregate([
             { $match: { createdAt: { $gte: new Date(start), $lte: new Date(end) } } },
-            {
-                $lookup: {
-                    from: "types",
-                    localField: "type",
-                    foreignField: "code",
-                    as: "typeName"
-                }
-            },
-            {
-                $lookup: {
-                    from: "frequences",
-                    localField: "frequence",
-                    foreignField: "code",
-                    as: "freqName"
-                }
-            },
+            { $lookup: { from: "types", localField: "type", foreignField: "code", as: "typeName" } },
+            { $lookup: { from: "frequences", localField: "frequence", foreignField: "code", as: "freqName" } },
             { $unwind: "$typeName" },
             { $unwind: "$freqName" },
-            {
-                $project: {
-                    name: 1,
-                    description: 1,
-                    nominal: 1,
-                    type: "$typeName.name",
-                    freq: "$freqName.name",
-                    date: "$createdAt"
-                }
-            },
+            { $project: { name: 1, description: 1, nominal: 1, type: "$typeName.name", freq: "$freqName.name", date: "$createdAt" } },
             { $sort: { date: -1 } }
         ]);
 
         const income = await Income.aggregate([
-            {
-                $match: {
-                    $or: [
-                        { month: { $in: month } },
-                        { year: { $in: year } }
-                    ]
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    name: 1,
-                    month: 1,
-                    year: 1,
-                    actual: 1,
-                    budget: 1
-                }
-            }
+            { $match: { $or: [{ month: { $in: month } }, { year: { $in: year } }] } },
+            { $project: { _id: 0, name: 1, month: 1, year: 1, actual: 1, budget: 1 } }
         ]);
 
-        const totalIncome = income.reduce((acc, item) => acc + item.actual, 0);
-        const totalBudget = income.reduce((acc, item) => acc + item.budget, 0);
+        const { totalIncome, totalBudget } = income.reduce(
+            (acc, item) => ({ totalIncome: acc.totalIncome + item.actual, totalBudget: acc.totalBudget + item.budget }),
+            { totalIncome: 0, totalBudget: 0 }
+        );
         const totalExpanses = expanses.reduce((acc, item) => acc + item.nominal, 0);
-        const expansesList = expanses.map(item => ({ ...item, date: moment(item.date).format(DEFDATEFORMAT) }));
-        const result = {
-            totalIncome,
-            totalBudget,
-            totalExpanses,
-            list: expansesList
-        };
+        const list = expanses.map(item => ({ ...item, date: moment(item.date).format(DEFDATEFORMAT) }));
 
-        return ApiSuccess("Success", result);
+        return ApiSuccess("Success", { totalIncome, totalBudget, totalExpanses, list });
     } catch (error) {
         console.error(error);
         return InternalServerError();
@@ -140,9 +100,7 @@ export const handleDateRangeMobile = async (params: GetDailyExpIntfc, token: str
 
 export const handleExpanseDetail = async (id: string, token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
-
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const data = await DailyExpanse.aggregate([
@@ -151,9 +109,7 @@ export const handleExpanseDetail = async (id: string, token: string) => {
                 $lookup: {
                     from: 'types',
                     let: { typeCode: '$type', uid: '$userId' },
-                    pipeline: [
-                        { $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
-                    ],
+                    pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }],
                     as: 'typeName'
                 }
             },
@@ -161,9 +117,7 @@ export const handleExpanseDetail = async (id: string, token: string) => {
                 $lookup: {
                     from: 'frequences',
                     let: { freqCode: '$frequence', uid: '$userId' },
-                    pipeline: [
-                        { $match: { $expr: { $and: [{ $eq: ['$code', '$$freqCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
-                    ],
+                    pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$code', '$$freqCode'] }, { $eq: ['$userId', '$$uid'] }] } } }],
                     as: 'freqName'
                 }
             },
@@ -189,9 +143,8 @@ export const handleExpanseDetail = async (id: string, token: string) => {
 
         const item = data[0]
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-        const result = { ...item, day: dayNames[item.day - 1] }
 
-        return ApiSuccess('Success', result)
+        return ApiSuccess('Success', { ...item, day: dayNames[item.day - 1] })
     } catch (error) {
         console.error(error)
         return InternalServerError()
@@ -200,9 +153,7 @@ export const handleExpanseDetail = async (id: string, token: string) => {
 
 export const handleDashboard = async (token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
-
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const timeZone = moment.tz.guess()
@@ -229,9 +180,7 @@ export const handleDashboard = async (token: string) => {
                     $lookup: {
                         from: 'types',
                         let: { typeCode: '$type', uid: '$userId' },
-                        pipeline: [
-                            { $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
-                        ],
+                        pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }],
                         as: 'typeName'
                     }
                 },
@@ -248,12 +197,12 @@ export const handleDashboard = async (token: string) => {
         ])
 
         const totalExpenses = monthExpenses.reduce((acc, item) => acc + item.totalNominal, 0)
-        const totalIncome = incomeData.reduce((acc, item) => acc + item.actual, 0)
-        const totalBudget = incomeData.reduce((acc, item) => acc + item.budget, 0)
-        const budgetUsedPercent = totalBudget > 0 ? +((totalExpenses / totalBudget) * 100).toFixed(2) : 0
+        const { totalIncome, totalBudget } = incomeData.reduce(
+            (acc, item) => ({ totalIncome: acc.totalIncome + item.actual, totalBudget: acc.totalBudget + item.budget }),
+            { totalIncome: 0, totalBudget: 0 }
+        )
 
-        type CategorySummary = { type: string; total: number }
-        const typeMap = monthExpenses.reduce<Record<string, CategorySummary>>((acc, item) => {
+        const typeMap = monthExpenses.reduce<Record<string, CategoryEntry>>((acc, item) => {
             if (!acc[item.type]) acc[item.type] = { type: item.typeName, total: 0 }
             acc[item.type].total += item.totalNominal
             return acc
@@ -261,16 +210,13 @@ export const handleDashboard = async (token: string) => {
         const topCategories = Object.values(typeMap)
             .sort((a, b) => b.total - a.total)
             .slice(0, 5)
-            .map(item => ({
-                ...item,
-                percent: totalExpenses > 0 ? +((item.total / totalExpenses) * 100).toFixed(2) : 0
-            }))
+            .map(item => ({ ...item, percent: calcPercent(item.total, totalExpenses) }))
 
         const weekDates = dateRangeGenerator(weekStart, todayEnd, timeZone)
         const weeklyMap = new Map(weeklyRaw.map((item: { date: string; total: number }) => [item.date, item.total]))
         const weeklyTrend = weekDates.map(date => ({ date, total: weeklyMap.get(date) ?? 0 }))
 
-        const result = {
+        return ApiSuccess('Success', {
             incomeStatus: resolveIncomeStatus(incomeData),
             month: {
                 income: totalIncome,
@@ -278,7 +224,7 @@ export const handleDashboard = async (token: string) => {
                 expenses: totalExpenses,
                 savingsByBudget: totalBudget - totalExpenses,
                 savingsByIncome: totalIncome - totalExpenses,
-                budgetUsedPercent
+                budgetUsedPercent: calcPercent(totalExpenses, totalBudget)
             },
             today: {
                 total: todayData[0]?.total ?? 0,
@@ -287,9 +233,7 @@ export const handleDashboard = async (token: string) => {
             recentTransactions: recentTx,
             topCategories,
             weeklyTrend
-        }
-
-        return ApiSuccess('Success', result)
+        })
     } catch (error) {
         console.error(error)
         return InternalServerError()
@@ -298,9 +242,7 @@ export const handleDashboard = async (token: string) => {
 
 export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
-
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const timeZone = tz || moment.tz.guess()
@@ -313,9 +255,7 @@ export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, to
                 $lookup: {
                     from: 'types',
                     let: { typeCode: '$type', uid: '$userId' },
-                    pipeline: [
-                        { $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
-                    ],
+                    pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }],
                     as: 'typeName'
                 }
             },
@@ -323,19 +263,13 @@ export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, to
                 $lookup: {
                     from: 'frequences',
                     let: { freqCode: '$frequence', uid: '$userId' },
-                    pipeline: [
-                        { $match: { $expr: { $and: [{ $eq: ['$code', '$$freqCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
-                    ],
+                    pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$code', '$$freqCode'] }, { $eq: ['$userId', '$$uid'] }] } } }],
                     as: 'freqName'
                 }
             },
             { $unwind: '$typeName' },
             { $unwind: '$freqName' },
-            {
-                $addFields: {
-                    dateOnly: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: timeZone } }
-                }
-            },
+            { $addFields: { dateOnly: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: timeZone } } } },
             {
                 $group: {
                     _id: '$dateOnly',
@@ -343,14 +277,7 @@ export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, to
                     total: { $sum: '$nominal' },
                     count: { $sum: 1 },
                     transactions: {
-                        $push: {
-                            id: '$_id',
-                            name: '$name',
-                            description: '$description',
-                            nominal: '$nominal',
-                            type: '$typeName.name',
-                            freq: '$freqName.name',
-                        }
+                        $push: { id: '$_id', name: '$name', description: '$description', nominal: '$nominal', type: '$typeName.name', freq: '$freqName.name' }
                     }
                 }
             },
@@ -358,12 +285,7 @@ export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, to
             { $project: { _id: 0 } }
         ])
 
-        const result = rawData.map(item => ({
-            ...item,
-            day: moment(item.date).format('dddd'),
-        }))
-
-        return ApiSuccess('Success', result)
+        return ApiSuccess('Success', rawData.map(item => ({ ...item, day: moment(item.date).format('dddd') })))
     } catch (error) {
         console.error(error)
         return InternalServerError()
@@ -372,9 +294,7 @@ export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, to
 
 export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
-
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const timeZone = tz || moment.tz.guess()
@@ -401,18 +321,12 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
                     $lookup: {
                         from: 'types',
                         let: { typeCode: '$type', uid: '$userId' },
-                        pipeline: [
-                            { $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
-                        ],
+                        pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }],
                         as: 'typeName'
                     }
                 },
                 { $unwind: '$typeName' },
-                {
-                    $addFields: {
-                        dateOnly: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: timeZone } }
-                    }
-                },
+                { $addFields: { dateOnly: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: timeZone } } } },
                 { $project: { _id: 0, name: 1, nominal: 1, type: '$typeName.name', date: '$dateOnly' } }
             ]),
             DailyExpanse.aggregate([
@@ -421,27 +335,19 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
                     $lookup: {
                         from: 'types',
                         let: { typeCode: '$type', uid: '$userId' },
-                        pipeline: [
-                            { $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }
-                        ],
+                        pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$code', '$$typeCode'] }, { $eq: ['$userId', '$$uid'] }] } } }],
                         as: 'typeName'
                     }
                 },
                 { $unwind: '$typeName' },
-                {
-                    $addFields: {
-                        dateOnly: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: timeZone } }
-                    }
-                },
+                { $addFields: { dateOnly: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: timeZone } } } },
                 {
                     $group: {
                         _id: '$type',
                         type: { $first: '$typeName.name' },
                         total: { $sum: '$nominal' },
                         count: { $sum: 1 },
-                        transactions: {
-                            $push: { name: '$name', nominal: '$nominal', date: '$dateOnly' }
-                        }
+                        transactions: { $push: { name: '$name', nominal: '$nominal', date: '$dateOnly' } }
                     }
                 },
                 { $sort: { total: -1 } },
@@ -450,15 +356,15 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
         ])
 
         const totalExpenses = rawExpenses.reduce((acc, item) => acc + item.totalNominal, 0)
-        const totalIncome = incomeData.reduce((acc, item) => acc + item.actual, 0)
-        const totalBudget = incomeData.reduce((acc, item) => acc + item.budget, 0)
+        const { totalIncome, totalBudget } = incomeData.reduce(
+            (acc, item) => ({ totalIncome: acc.totalIncome + item.actual, totalBudget: acc.totalBudget + item.budget }),
+            { totalIncome: 0, totalBudget: 0 }
+        )
         const totalTransactions = rawExpenses.reduce((acc, item) => acc + item.count, 0)
         const activeDays = new Set(rawExpenses.map(item => item.date)).size
-        const budgetUsedPercent = totalBudget > 0 ? +((totalExpenses / totalBudget) * 100).toFixed(2) : 0
         const dailyAverage = Math.round(totalExpenses / daysInMonth)
 
-        type CategorySummary = { type: string; total: number; count: number }
-        const categoryMap = rawExpenses.reduce<Record<string, CategorySummary>>((acc, item) => {
+        const categoryMap = rawExpenses.reduce<Record<string, CategoryEntryWithCount>>((acc, item) => {
             if (!acc[item.type]) acc[item.type] = { type: item.typeName, total: 0, count: 0 }
             acc[item.type].total += item.totalNominal
             acc[item.type].count += item.count
@@ -466,17 +372,16 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
         }, {})
         const byCategory = Object.values(categoryMap)
             .sort((a, b) => b.total - a.total)
-            .map(item => ({ ...item, percent: totalExpenses > 0 ? +((item.total / totalExpenses) * 100).toFixed(2) : 0 }))
+            .map(item => ({ ...item, percent: calcPercent(item.total, totalExpenses) }))
 
-        type FreqSummary = { freq: string; total: number }
-        const freqMap = rawExpenses.reduce<Record<string, FreqSummary>>((acc, item) => {
+        const freqMap = rawExpenses.reduce<Record<string, FreqEntry>>((acc, item) => {
             if (!acc[item.freq]) acc[item.freq] = { freq: item.freqName, total: 0 }
             acc[item.freq].total += item.totalNominal
             return acc
         }, {})
         const byFrequency = Object.values(freqMap)
             .sort((a, b) => b.total - a.total)
-            .map(item => ({ ...item, percent: totalExpenses > 0 ? +((item.total / totalExpenses) * 100).toFixed(2) : 0 }))
+            .map(item => ({ ...item, percent: calcPercent(item.total, totalExpenses) }))
 
         const getWeek = (dateStr: string) => {
             const day = +moment(dateStr).format('D')
@@ -494,22 +399,26 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
         }, {})
         const weeklyBreakdown = Object.values(weekMap).sort((a, b) => a.week - b.week)
 
-        const topTransactions = topTx.map((item: any) => ({
+        type TopTxItem = { name: string; nominal: number; type: string; date: string }
+        type TxItem = { name: string; nominal: number; date: string }
+        type TxByCategoryItem = { type: string; total: number; count: number; transactions: TxItem[] }
+
+        const topTransactions = (topTx as TopTxItem[]).map(item => ({
             ...item,
             day: moment(item.date).format('dddd')
         }))
 
-        const transactionsByCategory = txByCategory.map((item: any) => ({
+        const transactionsByCategory = (txByCategory as TxByCategoryItem[]).map(item => ({
             type: item.type,
             total: item.total,
             count: item.count,
-            percent: totalExpenses > 0 ? +((item.total / totalExpenses) * 100).toFixed(2) : 0,
+            percent: calcPercent(item.total, totalExpenses),
             transactions: item.transactions
-                .sort((a: any, b: any) => b.nominal - a.nominal)
-                .map((tx: any) => ({ ...tx, day: moment(tx.date).format('dddd') }))
+                .sort((a, b) => b.nominal - a.nominal)
+                .map(tx => ({ ...tx, day: moment(tx.date).format('dddd') }))
         }))
 
-        const result = {
+        return ApiSuccess('Success', {
             incomeStatus: resolveIncomeStatus(incomeData),
             overview: {
                 income: totalIncome,
@@ -517,7 +426,7 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
                 expenses: totalExpenses,
                 savingsByBudget: totalBudget - totalExpenses,
                 savingsByIncome: totalIncome - totalExpenses,
-                budgetUsedPercent,
+                budgetUsedPercent: calcPercent(totalExpenses, totalBudget),
                 dailyAverage,
                 activeDays,
                 totalTransactions
@@ -527,9 +436,7 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
             weeklyBreakdown,
             topTransactions,
             transactionsByCategory
-        }
-
-        return ApiSuccess('Success', result)
+        })
     } catch (error) {
         console.error(error)
         return InternalServerError()
@@ -538,16 +445,8 @@ export const handleMonthlyReport = async ({ month, year, tz }: GetIncomeIntfc, t
 
 export const handleIncomeList = async (token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
-
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
-
-        const MONTH_ORDER: Record<string, number> = {
-            january: 1, february: 2, march: 3, april: 4,
-            may: 5, june: 6, july: 7, august: 8,
-            september: 9, october: 10, november: 11, december: 12
-        }
 
         const raw = await Income.aggregate([
             { $match: { userId: user._id } },
@@ -559,14 +458,7 @@ export const handleIncomeList = async (token: string) => {
                     totalActual: { $sum: '$actual' },
                     totalBudget: { $sum: '$budget' },
                     count: { $sum: 1 },
-                    details: {
-                        $push: {
-                            id: '$_id',
-                            name: '$name',
-                            actual: '$actual',
-                            budget: '$budget'
-                        }
-                    }
+                    details: { $push: { id: '$_id', name: '$name', actual: '$actual', budget: '$budget' } }
                 }
             },
             { $project: { _id: 0 } }
@@ -577,10 +469,7 @@ export const handleIncomeList = async (token: string) => {
                 if (b.year !== a.year) return +b.year - +a.year
                 return (MONTH_ORDER[b.month] ?? 0) - (MONTH_ORDER[a.month] ?? 0)
             })
-            .map(item => ({
-                ...item,
-                savings: item.totalActual - item.totalBudget
-            }))
+            .map(item => ({ ...item, savings: item.totalActual - item.totalBudget }))
 
         return ApiSuccess('Success', result)
     } catch (error) {
@@ -591,8 +480,7 @@ export const handleIncomeList = async (token: string) => {
 
 export const handleAnalysis = async (token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const currMoment = moment()
@@ -604,8 +492,6 @@ export const handleAnalysis = async (token: string) => {
         const currentYear = currMoment.format('YYYY')
         const prevMonth = prevMoment.format('MMMM').toLowerCase()
         const prevYear = prevMoment.format('YYYY')
-
-        const MONTH_NAMES = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 
         const [monthlyExpenses, categoryTotals, monthlyIncome, compExpenses, compIncome] = await Promise.all([
             DailyExpanse.aggregate([
@@ -684,8 +570,7 @@ export const handleAnalysis = async (token: string) => {
                 const exp = monthlyExpenses.find((e: { monthNum: number; year: number }) => e.monthNum === monthNum && e.year === +year) || { totalExpenses: 0 }
                 const inc = incomeMap[`${year}-${monthName}`] || { totalIncome: 0, totalBudget: 0 }
                 const savings = inc.totalIncome - exp.totalExpenses
-                const savingsRate = inc.totalIncome > 0 ? +((savings / inc.totalIncome) * 100).toFixed(2) : 0
-                return { month: monthName, year, totalExpenses: exp.totalExpenses, totalIncome: inc.totalIncome, totalBudget: inc.totalBudget, savings, savingsRate }
+                return { month: monthName, year, totalExpenses: exp.totalExpenses, totalIncome: inc.totalIncome, totalBudget: inc.totalBudget, savings, savingsRate: calcPercent(savings, inc.totalIncome) }
             })
             .sort((a, b) => +a.year !== +b.year ? +a.year - +b.year : MONTH_NAMES.indexOf(a.month) - MONTH_NAMES.indexOf(b.month))
 
@@ -699,7 +584,7 @@ export const handleAnalysis = async (token: string) => {
         const totalCatExp = categoryTotals.reduce((acc: number, c: { total: number }) => acc + c.total, 0)
         const topCategories = categoryTotals.map((c: { type: string; total: number; count: number }) => ({
             ...c,
-            percent: totalCatExp > 0 ? +((c.total / totalCatExp) * 100).toFixed(2) : 0
+            percent: calcPercent(c.total, totalCatExp)
         }))
 
         const currExpTotal = compExpenses.find((e: { month: number; year: number }) => e.month === +currMoment.format('M') && e.year === +currentYear)?.totalExpenses ?? 0
@@ -737,8 +622,7 @@ export const handleAnalysis = async (token: string) => {
 
 export const handleUpdateIncome = async (params: { id: string; name: string; month: string; year: string; actual: number; budget: number }, token: string) => {
     try {
-        const uniqueKey = decodingToken(token)
-        const user = await findUserByUniqueKey(String(uniqueKey))
+        const user = await resolveUser(token)
         if (!user) return NotFound('User not found')
 
         const updated = await Income.findOneAndUpdate(
@@ -746,7 +630,6 @@ export const handleUpdateIncome = async (params: { id: string; name: string; mon
             { name: params.name, month: params.month.toLowerCase(), year: params.year, actual: params.actual, budget: params.budget },
             { new: true }
         )
-
         if (!updated) return NotFound('Income not found')
 
         return ApiSuccess('Success')

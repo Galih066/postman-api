@@ -30,6 +30,9 @@ export const resolveIncomeStatus = (data: { actual: number }[]) => {
     return { isSet: true, isUpdated: true, message: 'Income has been set for this month' }
 }
 
+export const calcPercent = (value: number, total: number) =>
+    total > 0 ? +((value / total) * 100).toFixed(2) : 0
+
 export const getPercentageChange = (current: number, previous: number) => {
     if (previous === 0) {
         if (current === 0) return { direction: 'no change', percentage: 0 };
