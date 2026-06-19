@@ -78,3 +78,10 @@ export const analysis = async (request: Request, response: Response) => {
     const result = await MobileService.handleAnalysis(token)
     response.status(result.statusCode).json(result)
 }
+
+export const updateIncome = async (request: Request, response: Response) => {
+    const reqHeader = request.headers.authorization;
+    const token = reqHeader?.split(' ')[1] as string
+    const result = await MobileService.handleUpdateIncome(request.body, token)
+    response.status(result.statusCode).json(result)
+}

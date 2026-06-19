@@ -734,3 +734,24 @@ export const handleAnalysis = async (token: string) => {
         return InternalServerError()
     }
 }
+
+export const handleUpdateIncome = async (params: { id: string; name: string; month: string; year: string; actual: number; budget: number }, token: string) => {
+    try {
+        const uniqueKey = decodingToken(token)
+        const user = await findUserByUniqueKey(String(uniqueKey))
+        if (!user) return NotFound('User not found')
+
+        const updated = await Income.findOneAndUpdate(
+            { _id: new mongoose.Types.ObjectId(params.id), userId: user._id },
+            { name: params.name, month: params.month.toLowerCase(), year: params.year, actual: params.actual, budget: params.budget },
+            { new: true }
+        )
+
+        if (!updated) return NotFound('Income not found')
+
+        return ApiSuccess('Success')
+    } catch (error) {
+        console.error(error)
+        return InternalServerError()
+    }
+}

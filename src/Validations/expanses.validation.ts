@@ -71,3 +71,12 @@ export const updExpanse = Joi.object({
     frequence: Joi.string().required(),
     date: Joi.string().required(),
 });
+
+export const mobileUpdInc = Joi.object({
+    id: Joi.string().required(),
+    name: Joi.string().required(),
+    month: Joi.string().required(),
+    year: Joi.string().required(),
+    actual: Joi.number().required(),
+    budget: Joi.number().required(),
+});

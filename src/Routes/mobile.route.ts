@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { dailyExpanses, mobileDashboard, expanseDetail, addInc, updExpanse } from "../Validations/expanses.validation.js";
+import { dailyExpanses, mobileDashboard, expanseDetail, addInc, updExpanse, mobileUpdInc } from "../Validations/expanses.validation.js";
 import validation from "../Middlewares/validation.middleware.js";
 import tokenValidation from "../Middlewares/auth.middleware.js";
 import * as MobileController from "../Controllers/Expanses/mobile.controller.js";
@@ -16,5 +16,6 @@ router.post('/add-income', [tokenValidation, validation(addInc, 'body')], Mobile
 router.put('/update-expanse', [tokenValidation, validation(updExpanse, 'body')], MobileController.updateExpanse)
 router.delete('/expanse', [tokenValidation, validation(expanseDetail, 'query')], MobileController.deleteExpanse)
 router.get('/analysis', [tokenValidation], MobileController.analysis)
+router.put('/update-income', [tokenValidation, validation(mobileUpdInc, 'body')], MobileController.updateIncome)
 
 export default router
