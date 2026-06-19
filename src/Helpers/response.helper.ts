@@ -1,28 +1,26 @@
-interface Resp<T = any> {
-    statusCode: number,
-    message?: string,
-    data?: T,
-    details?: []
+export interface ApiResponse<T = unknown> {
+    statusCode: number
+    message?: string
+    data?: T
+    details?: string[]
 }
 
-export const ApiSuccess = <T = any>(message: string, data?: T): Resp<T> => {
-    const resp: Resp<T> = { statusCode: 200, message };
-    if (data) resp.data = data;
-    return resp;
+export const ApiSuccess = <T = unknown>(message: string, data?: T): ApiResponse<T> => {
+    const resp: ApiResponse<T> = { statusCode: 200, message }
+    if (data !== undefined) resp.data = data
+    return resp
 }
 
-export const InternalServerError = (message?: string) => {
-    const resp: Resp = { statusCode: 500, message: message && 'Something went wrong. Please check log' }
-    return resp;
+export const InternalServerError = (message?: string): ApiResponse => {
+    return { statusCode: 500, message: message || 'Something went wrong. Please check log' }
 }
 
-export const BadRequest = (message: string, details?: null) => {
-    const resp: Resp = { statusCode: 400, message };
-    if (details) resp.details = details;
-    return resp;
+export const BadRequest = (message: string, details?: string[]): ApiResponse => {
+    const resp: ApiResponse = { statusCode: 400, message }
+    if (details) resp.details = details
+    return resp
 }
 
-export const NotFound = (message: string) => {
-    const resp: Resp = { statusCode: 404, message };
-    return resp;
+export const NotFound = (message: string): ApiResponse => {
+    return { statusCode: 404, message }
 }
