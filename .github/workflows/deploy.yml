@@ -33,9 +33,8 @@ jobs:
 
       - name: Copy build files to server
         run: |
-          rsync -avz --delete \
-            dist/ package.json package-lock.json \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/postman-api/
+          rsync -avz --delete dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/postman-api/dist/
+          rsync -avz package.json package-lock.json ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/postman-api/
 
       - name: Install production dependencies & restart app
         run: |
