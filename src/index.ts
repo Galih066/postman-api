@@ -27,7 +27,10 @@ app.use((_req: Request, res: Response) => {
 	res.status(404).json({ statusCode: 404, message: 'Route not found' });
 });
 
-connection().catch(err => console.error('Failed to connect to database:', err));
+connection().catch(err => {
+	console.error('Failed to connect to database:', err);
+	process.exit(1);
+});
 startIncomeScheduler();
 
 // Listen on 0.0.0.0 for Cloud Run (not 127.0.0.1)

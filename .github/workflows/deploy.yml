@@ -46,8 +46,24 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s' <<'EOF'
             set -e
             cd /opt/postman-api
+
+            # .env is not part of the deploy; it must exist on the server (only variable names are printed)
+            if [ ! -f .env ]; then
+              echo "ERROR: /opt/postman-api/.env not found"; exit 1
+            fi
+            NODE_APP_VAL=$(grep -E '^NODE_APP=' .env | cut -d= -f2 | tr -d '[:space:]"')
+            DB_VAR=$([ "$NODE_APP_VAL" = "production" ] && echo MONGO_URI_PRD || echo MONGO_URI)
+            for VAR in SECRET_KEY "$DB_VAR"; do
+              grep -qE "^$VAR=.+" .env || { echo "ERROR: $VAR is missing in .env (NODE_APP=${NODE_APP_VAL:-<unset>})"; exit 1; }
+            done
+
             npm ci --omit=dev
-            pm2 startOrReload ecosystem.config.cjs --update-env
+
+            # delete + start (not reload) so no stale env vars from a previous start are kept by pm2
+            # flush first so the health check only shows logs from this run
+            pm2 flush postman-api > /dev/null 2>&1 || true
+            pm2 delete postman-api > /dev/null 2>&1 || true
+            pm2 start ecosystem.config.cjs
             pm2 save
           EOF
 
