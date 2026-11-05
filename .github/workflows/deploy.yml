@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -16,7 +20,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -34,12 +39,38 @@ jobs:
       - name: Copy build files to server
         run: |
           rsync -avz --delete dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/postman-api/dist/
-          rsync -avz package.json package-lock.json ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/postman-api/
+          rsync -avz package.json package-lock.json ecosystem.config.cjs ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/postman-api/
 
-      - name: Install production dependencies & restart app
+      - name: Install production dependencies & reload app
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-            cd /opt/postman-api &&
-            npm ci --production &&
-            pm2 restart postman-api || pm2 start dist/index.js --name postman-api
-          "
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s' <<'EOF'
+            set -e
+            cd /opt/postman-api
+            npm ci --omit=dev
+            pm2 startOrReload ecosystem.config.cjs --update-env
+            pm2 save
+          EOF
+
+      - name: Health check
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s' <<'EOF'
+            cd /opt/postman-api
+            PORT=$(grep -E '^PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+            PORT=${PORT:-3000}
+            sleep 5
+            for i in $(seq 1 10); do
+              PID=$(pm2 pid postman-api)
+              # The port must be held by OUR pm2 process (not a stale process from another user/folder)
+              if [ -n "$PID" ] && [ "$PID" != "0" ] \
+                && ss -ltnp | grep ":$PORT " | grep -q "pid=$PID," \
+                && curl -fsS "http://localhost:$PORT/" > /dev/null; then
+                echo "Health check OK: pid $PID is serving port $PORT"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "Health check failed: port $PORT is not served by pm2 process postman-api"
+            ss -ltnp | grep ":$PORT " || echo "(port $PORT held by another user's process, or not listening)"
+            pm2 logs postman-api --lines 40 --nostream
+            exit 1
+          EOF
