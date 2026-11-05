@@ -281,11 +281,19 @@ export const handleTransactions = async ({ month, year, tz }: GetIncomeIntfc, to
                     }
                 }
             },
-            { $sort: { date: -1 } },
             { $project: { _id: 0 } }
         ])
 
-        return ApiSuccess('Success', rawData.map(item => ({ ...item, day: moment(item.date).format('dddd') })))
+        const todayEnd = moment.tz(timeZone).endOf('day').utc().toISOString()
+        const rangeEnd = moment(monthEnd).isAfter(todayEnd) ? todayEnd : monthEnd
+        const dates = moment(monthStart).isAfter(rangeEnd) ? [] : dateRangeGenerator(monthStart, rangeEnd, timeZone)
+        const dataMap = new Map(rawData.map(item => [item.date, item]))
+        const result = dates
+            .map(date => dataMap.get(date) ?? { date, total: 0, count: 0, transactions: [] })
+            .reverse()
+            .map(item => ({ ...item, day: moment(item.date).format('dddd') }))
+
+        return ApiSuccess('Success', result)
     } catch (error) {
         console.error(error)
         return InternalServerError()
