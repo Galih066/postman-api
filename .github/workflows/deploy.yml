@@ -73,20 +73,18 @@ jobs:
             cd /opt/postman-api
             PORT=$(grep -E '^PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
             PORT=${PORT:-3000}
-            sleep 5
-            for i in $(seq 1 10); do
-              PID=$(pm2 pid postman-api)
-              # The port must be held by OUR pm2 process (not a stale process from another user/folder)
-              if [ -n "$PID" ] && [ "$PID" != "0" ] \
-                && ss -ltnp | grep ":$PORT " | grep -q "pid=$PID," \
-                && curl -fsS "http://localhost:$PORT/" > /dev/null; then
-                echo "Health check OK: pid $PID is serving port $PORT"
-                exit 0
-              fi
-              sleep 2
-            done
-            echo "Health check failed: port $PORT is not served by pm2 process postman-api"
-            ss -ltnp | grep ":$PORT " || echo "(port $PORT held by another user's process, or not listening)"
+            # Wait past min_uptime so a crash loop shows up as restarts/errored
+            sleep 12
+            STABLE=$(pm2 jlist | node -e "
+              const p = JSON.parse(require('fs').readFileSync(0, 'utf8')).find(a => a.name === 'postman-api');
+              console.log(p && p.pm2_env.status === 'online' && p.pm2_env.restart_time === 0 ? 'yes' : 'no');
+            ")
+            if [ "$STABLE" = "yes" ] && curl -fsS "http://localhost:$PORT/" > /dev/null; then
+              echo "Health check OK: postman-api online and responding on port $PORT"
+              exit 0
+            fi
+            echo "Health check failed (pm2 stable: $STABLE)"
+            pm2 describe postman-api | grep -E "status|restarts|script path|exec cwd" || true
             pm2 logs postman-api --lines 40 --nostream
             exit 1
           EOF
