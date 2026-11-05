@@ -13,7 +13,6 @@ module.exports = {
             min_uptime: "10s",
             time: true,
             env: {
-                NODE_APP: "production",
                 TZ: "UTC"
             }
         }
